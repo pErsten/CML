@@ -10,6 +10,7 @@ namespace Common.Data
             
         }
         public DbSet<BitcoinExchange> BitcoinExchanges { get; set; }
+        public DbSet<Account> Accounts { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder mb)

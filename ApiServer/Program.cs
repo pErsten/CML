@@ -1,7 +1,11 @@
 using ApiServer.BackgroundWorkers;
 using ApiServer.Controllers;
 using Common.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using ApiServer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -13,9 +17,21 @@ services.AddSwaggerGen();
 
 var sqlConnectionStr = builder.Configuration.GetValue<string>("Databases:SqlConnection");
 services.AddDbContext<SqlContext>(options => options.UseSqlServer(sqlConnectionStr));
-
+services.AddSingleton<JwtTokenGenerator>();
+services.AddScoped<AuthService>();
 
 services.AddHostedService<BtcRatesFetcher>();
+
+var jwtKey = Guid.NewGuid().ToString();
+services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options => options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+    });
+services.AddAuthorization();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -26,41 +42,16 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-//app.UseAuthorization();
+app.UseAuthorization();
 
 
 var authEPs = app.MapGroup("/").RequireAuthorization().WithOpenApi();
 var anonEPs = app.MapGroup("/").AllowAnonymous().WithOpenApi();
 
 // Controllers
+anonEPs.UserAuthController();
+
 authEPs.UserHomeController();
-
-
-
-/*var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
-*/
 
 app.Run();
 
