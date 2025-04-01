@@ -14,7 +14,7 @@ namespace Common.Data.Entities
         public BitcoinExchange(decimal rate)
         {
             BTCRate = rate;
-            Currency = Constants.DefaultCurrency;
+            Currency = Constants.FiatCurrency;
             UtcDate = DateTime.UtcNow;
         }
     }

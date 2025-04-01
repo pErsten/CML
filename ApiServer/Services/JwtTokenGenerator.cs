@@ -19,14 +19,15 @@ namespace ApiServer.Services
         }
 
         public string GenerateJwt(Account account)
-            => GenerateJwt(account.Login, account.AccountId.ToString());
+            => GenerateJwt(account.Login, account.AccountId);
         public string GenerateJwt(string login, string accountId)
         {
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, accountId),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.Name, login)
+                new Claim(ClaimTypes.Name, accountId),
+                new Claim(ClaimTypes.Surname, login)
             };
 
             var token = new JwtSecurityToken(

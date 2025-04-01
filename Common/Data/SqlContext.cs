@@ -11,12 +11,22 @@ namespace Common.Data
         }
         public DbSet<BitcoinExchange> BitcoinExchanges { get; set; }
         public DbSet<Account> Accounts { get; set; }
+        public DbSet<AccountWallet> AccountWallets { get; set; }
+        public DbSet<BitcoinOrder> BitcoinOrders { get; set; }
+        public DbSet<BitcoinOrderTransaction> BitcoinOrderTransactions { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder mb)
         {
             mb.Entity<BitcoinExchange>().HasIndex(x => new { x.UtcDate, x.Currency });
             mb.Entity<BitcoinExchange>().Property(x => x.BTCRate).HasPrecision(18, 2);
+
+            mb.Entity<Account>().Property(x => x.Login).HasMaxLength(100);
+            mb.Entity<Account>().Property(x => x.AccountId).HasMaxLength(50);
+            mb.Entity<Account>().HasIndex(x => x.Login).IsUnique();
+            mb.Entity<Account>().HasIndex(x => x.AccountId).IsUnique();
+
+            mb.Entity<AccountWallet>().HasIndex(x => new { x.AccountId, x.Currency }).IsUnique();
 
             base.OnModelCreating(mb);
         }

@@ -6,7 +6,7 @@ namespace Common.Data.Entities
     {
         [Key]
         public int Id { get; set; }
-        public Guid AccountId { get; set; }
+        public string AccountId { get; set; }
         public string Login { get; set; }
         public string PasswordHash { get; set; }
         public DateTime UtcCreated { get; set; }
@@ -17,7 +17,7 @@ namespace Common.Data.Entities
         {
             PasswordHash = passwordHash;
             Login = login;
-            AccountId = Guid.NewGuid();
+            AccountId = Guid.NewGuid().ToString();
             UtcCreated = DateTime.UtcNow;
         }
     }

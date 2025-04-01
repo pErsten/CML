@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using ApiServer.Services;
+using Common.Data.Entities;
+using System.Threading.Channels;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -15,18 +17,31 @@ var services = builder.Services;
 services.AddEndpointsApiExplorer();
 services.AddSwaggerGen();
 
+var channel = Channel.CreateUnbounded<BitcoinOrder>(new UnboundedChannelOptions
+{
+    SingleReader = true
+});
+services.AddSingleton(channel); 
+services.AddSingleton(channel.Writer); 
+services.AddSingleton(channel.Reader);
+
 var sqlConnectionStr = builder.Configuration.GetValue<string>("Databases:SqlConnection");
 services.AddDbContext<SqlContext>(options => options.UseSqlServer(sqlConnectionStr));
 services.AddSingleton<JwtTokenGenerator>();
 services.AddScoped<AuthService>();
+services.AddScoped<WalletService>();
+services.AddHttpContextAccessor();
 
 services.AddHostedService<BtcRatesFetcher>();
+services.AddHostedService<OrdersManager>();
 
-var jwtKey = Guid.NewGuid().ToString();
+var jwtKey = builder.Configuration.GetValue<string>("Auth:JwtKey");
 services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options => options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateLifetime = true,
+        ValidateIssuer = false,
+        ValidateAudience = false,
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     });
@@ -52,6 +67,7 @@ var anonEPs = app.MapGroup("/").AllowAnonymous().WithOpenApi();
 anonEPs.UserAuthController();
 
 authEPs.UserHomeController();
+authEPs.UserOrdersController(app.Environment);
 
 app.Run();
 
