@@ -5,6 +5,7 @@ using Common.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Channels;
+using Common.Data.Enums;
 
 namespace ApiServer.Controllers;
 
@@ -34,7 +35,12 @@ public static class OrdersController
         }
 
         var wallet = await walletService.GetOrCreateWallet(account.Id, req.Currency());
-        if (wallet.Amount < req.Amount)
+        var amount = req.Amount;
+        if (req.Type == OrderTypeEnum.Bid)
+        {
+            amount *= req.Price;
+        }
+        if (wallet.Amount < amount)
         {
             return Results.BadRequest("Not enough money");
         }
