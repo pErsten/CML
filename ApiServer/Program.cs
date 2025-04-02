@@ -46,6 +46,16 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     });
 services.AddAuthorization();
+services.AddSignalR();
+services.AddCors(options =>
+{
+    options.AddPolicy("WebClient",
+        policy => policy.WithOrigins("https://localhost:7121")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
+});
+
 
 var app = builder.Build();
 
@@ -56,6 +66,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors("WebClient");
+app.MapHub<SignalRHub>("/messages");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 

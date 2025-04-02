@@ -4,6 +4,8 @@ using Common;
 using Common.Data;
 using Common.Data.Entities;
 using Common.Data.Enums;
+using Common.Dtos;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApiServer.BackgroundWorkers
@@ -43,6 +45,7 @@ namespace ApiServer.BackgroundWorkers
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             using var scope = scopeFactory.CreateScope();
+            var updatedWalletsOfAccs = new List<int>();
             await foreach (var order in channelReader.ReadAllAsync(stoppingToken))
             {
                 switch (order.Type)
@@ -137,22 +140,57 @@ namespace ApiServer.BackgroundWorkers
                     cryptoBidderWallet.Amount += btcAmount;
                     cryptoAskerWallet.Amount -= btcAmount;
                     fiatAskerWallet.Amount += btcAmount * btcPrice;
-
+                    updatedWalletsOfAccs.Add(cryptoBidderWallet.AccountId);
+                    updatedWalletsOfAccs.Add(cryptoAskerWallet.AccountId);
 
                     await dbContext.BitcoinOrderTransactions.AddAsync(trans, stoppingToken);
                     isChanged = true;
                 }
 
+                var messagesHub = scope.ServiceProvider.GetService<IHubContext<SignalRHub>>();
+                var bidsAgg = Enumerable.Range(0, Constants.OrdersShown).Select(x => new BitcoinOrdersDto()).ToList();
+                var asksAgg = Enumerable.Range(0, Constants.OrdersShown).Select(x => new BitcoinOrdersDto()).ToList();
+                for (int i = 0, j = openBids.Count - 1; j >= 0; j--)
+                {
+                    if (bidsAgg[i].Price != 0 && bidsAgg[i].Price != openBids[j].BtcPrice)
+                    {
+                        i++;
+                        if (i >= Constants.OrdersShown)
+                        {
+                            break;
+                        }
+                    }
+                    bidsAgg[i].Price = openBids[j].BtcPrice;
+                    bidsAgg[i].Amount += openBids[j].BtcRemained;
+                }
+                for (int i = 0, j = openAsks.Count - 1; j >= 0; j--)
+                {
+                    if (asksAgg[i].Price != 0 && asksAgg[i].Price != openAsks[j].BtcPrice)
+                    {
+                        i++;
+                        if (i >= Constants.OrdersShown)
+                        {
+                            break;
+                        }
+                    }
+                    asksAgg[i].Price = openAsks[j].BtcPrice;
+                    asksAgg[i].Amount += openAsks[j].BtcRemained;
+                }
+                await messagesHub.Clients.All.SendAsync("OrdersUpdate", bidsAgg, asksAgg);
+
                 if (isChanged)
                 {
                     await dbContext.SaveChangesAsync(stoppingToken);
+                    
+
+                    var tasks = updatedWalletsOfAccs.Select(x => messagesHub.Clients.All.SendAsync("WalletUpdate", x, stoppingToken));
+                    await Task.WhenAll(tasks);
+                    updatedWalletsOfAccs.Clear();
                 }
             }
         }
 
 
-
-        //  TODO: check signs
         private Comparer<BitcoinOrder> bidComparer =
             Comparer<BitcoinOrder>.Create((x, y) => Math.Sign(x.BtcPrice - y.BtcPrice));
         private Comparer<BitcoinOrder> askComparer =
