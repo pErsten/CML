@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using System.Net
+@using Common
 @using Common.Data.Entities
 @using Common.Dtos
 @using Microsoft.AspNetCore.Connections
@@ -7,10 +8,14 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @inject IConfiguration configuration
 @inject NavigationManager Navigation
+@inject IJSRuntime _jsRuntime;
 
 <PageTitle>Chart</PageTitle>
 
 <h1>Bitcoin chart</h1>
+
+Your fiat balance: @fiatBalance <br/>
+Your crypto balance: @cryptoBalance
 @rr
 
 <div class="d-flex flex-row">
@@ -25,13 +30,18 @@
     public List<ChartSeries> AskSeries = new List<ChartSeries>();
     public string[] AskLabels = new string[] { };
     private string rr;
+    private decimal fiatBalance;
+    private decimal cryptoBalance;
+
     ChartOptions bidOptions = new() { ChartPalette = new string[] { "green" } };
     ChartOptions askOptions = new() { ChartPalette = new string[] { "red" } };
 
     protected override async Task OnInitializedAsync()
     {
+        
+        string serverUrl = configuration.GetValue<string>("ServerUrl"); 
+        var username = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "username");
 
-        string serverUrl = configuration.GetValue<string>("ServerUrl");
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri($"{serverUrl}/messages"))
             .WithAutomaticReconnect()
@@ -51,8 +61,26 @@
             AskLabels = openAsks.Select(x => x.Price.ToString()).ToArray();
             StateHasChanged();
         });
+
+        hubConnection.On<AccountWalletDto>("WalletUpdate", (wallet) =>
+        {
+            if (wallet.Currency == Constants.FiatCurrency)
+            {
+                fiatBalance = wallet.Amount;
+            }
+            else if (wallet.Currency == Constants.CryptoCurrency)
+            {
+                cryptoBalance = wallet.Amount;
+            }
+            StateHasChanged();
+        });
         
         await hubConnection.StartAsync();
+        if (!string.IsNullOrEmpty(username))
+        {
+            await hubConnection.InvokeAsync("SubscribeToWalletUpdates", username);
+        }
+
         StateHasChanged();
     }
 

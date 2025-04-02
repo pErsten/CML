@@ -30,6 +30,7 @@ services.AddDbContext<SqlContext>(options => options.UseSqlServer(sqlConnectionS
 services.AddSingleton<JwtTokenGenerator>();
 services.AddScoped<AuthService>();
 services.AddScoped<WalletService>();
+services.AddSingleton<SignalRService>();
 services.AddHttpContextAccessor();
 
 services.AddHostedService<BtcRatesFetcher>();

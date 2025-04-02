@@ -1,0 +1,69 @@
+﻿@page "/login"
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Authorization
+@using Newtonsoft.Json
+@inject IConfiguration Configuration
+@inject IJSRuntime jsRuntime
+@inject NavigationManager NavigationManager
+
+<h3>Login</h3>
+<EditForm Model="@model" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <MudGrid>
+        <MudItem xs="12" sm="12">
+            <MudCard>
+                <MudCardContent>
+                    <MudTextField Label="First name" HelperText="Max. 8 characters"
+                    @bind-Value="model.Username" For="@(() => model.Username)" />
+                    <MudTextField Label="Password" HelperText="Choose a strong password" Class="mt-3"
+                    @bind-Value="model.Password" For="@(() => model.Password)" InputType="InputType.Password" />
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Register</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12">
+            <MudText Typo="Typo.body2" Align="Align.Center" Style="color:red">
+                @errorMsg
+            </MudText>
+        </MudItem>
+    </MudGrid>
+</EditForm>
+@code {
+    RegisterAccountForm model = new RegisterAccountForm();
+    bool success;
+    string errorMsg;
+
+    public class RegisterAccountForm
+    {
+        [Required]
+        //[StringLength(8, ErrorMessage = "Name length can't be more than 8.")]
+        public string Username { get; set; }
+
+        [Required]
+        //[StringLength(30, ErrorMessage = "Password must be at least 8 characters long.", MinimumLength = 8)]
+        public string Password { get; set; }
+
+    }
+
+    private async Task OnValidSubmit(EditContext context)
+    {
+        string serverUrl = Configuration.GetValue<string>("ServerUrl");
+        using var cli = new HttpClient();
+        var response = await cli.GetAsync($"{serverUrl}/auth/login?login={model.Username}&password={model.Password}");
+        if (response.StatusCode != System.Net.HttpStatusCode.OK)
+        {
+            errorMsg = response.ReasonPhrase;
+            return;
+        }
+
+        var token = await response.Content.ReadAsStringAsync();
+        await jsRuntime.InvokeAsync<object>("localStorage.setItem", "authToken", token);
+        await jsRuntime.InvokeAsync<object>("localStorage.setItem", "username", model.Username);
+
+        success = true;
+        NavigationManager.NavigateTo("/");
+        StateHasChanged();
+    }
+}
