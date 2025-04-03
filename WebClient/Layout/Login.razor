@@ -19,6 +19,9 @@
                     @bind-Value="model.Password" For="@(() => model.Password)" InputType="InputType.Password" />
                 </MudCardContent>
                 <MudCardActions>
+                    <MudButton ButtonType="ButtonType.Button" OnClick="OnValidLogin" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Login</MudButton>
+                </MudCardActions>
+                <MudCardActions>
                     <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Register</MudButton>
                 </MudCardActions>
             </MudCard>
@@ -47,11 +50,20 @@
 
     }
 
+    private async Task OnValidLogin()
+    {
+        await Authenticate("login");
+    }
     private async Task OnValidSubmit(EditContext context)
+    {
+        await Authenticate("register");
+    }
+
+    private async Task Authenticate(string endpoint)
     {
         string serverUrl = Configuration.GetValue<string>("ServerUrl");
         using var cli = new HttpClient();
-        var response = await cli.GetAsync($"{serverUrl}/auth/login?login={model.Username}&password={model.Password}");
+        var response = await cli.GetAsync($"{serverUrl}/auth/{endpoint}?login={model.Username}&password={model.Password}");
         if (response.StatusCode != System.Net.HttpStatusCode.OK)
         {
             errorMsg = response.ReasonPhrase;
@@ -59,7 +71,7 @@
         }
 
         var token = await response.Content.ReadAsStringAsync();
-        await jsRuntime.InvokeAsync<object>("localStorage.setItem", "authToken", token);
+        await jsRuntime.InvokeAsync<object>("localStorage.setItem", "authToken", token.Trim('"'));
         await jsRuntime.InvokeAsync<object>("localStorage.setItem", "username", model.Username);
 
         success = true;

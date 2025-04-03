@@ -1,7 +1,9 @@
-﻿using Common;
+﻿using ApiServer.Services;
+using Common;
 using Common.Data;
 using Common.Data.Entities;
 using Common.Dtos;
+using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json.Linq;
 
 namespace ApiServer.BackgroundWorkers
@@ -9,13 +11,15 @@ namespace ApiServer.BackgroundWorkers
     public class BtcRatesFetcher : BackgroundService
     {
         private readonly IServiceScopeFactory scopeFactory;
+        private readonly SignalRService messageService;
         private readonly IConfiguration configuration;
         private readonly string url;
         private decimal lastRate;
 
-        public BtcRatesFetcher(IServiceScopeFactory scopeFactory, IConfiguration configuration)
+        public BtcRatesFetcher(IServiceScopeFactory scopeFactory, SignalRService messageService, IConfiguration configuration)
         {
             this.scopeFactory = scopeFactory;
+            this.messageService = messageService;
             this.configuration = configuration;
             url = configuration.GetValue<string>("BtcRatesApi");
         }
@@ -59,6 +63,8 @@ namespace ApiServer.BackgroundWorkers
 
             if (lastRate != dto.fifteenMin)
             {
+                var messageHub = scope.ServiceProvider.GetService<IHubContext<SignalRHub>>();
+                messageService.SendBitcoinRateUpdate(messageHub.Clients, dto.fifteenMin);
                 await dbContext.BitcoinExchanges.AddAsync(new BitcoinExchange(dto.fifteenMin));
                 await dbContext.SaveChangesAsync();
                 lastRate = dto.fifteenMin;
