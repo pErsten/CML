@@ -1,0 +1,14 @@
+﻿BACKGROUND
+To understand the task, educate yourself about the order book (basic knowledge is more than enough). For simplicity, let's assume that we are dealing with a cryptoexchange that only offers Bitcoin (BTC), and that BTC can only be traded for EUR. See the attached PPT.
+Imagine that you have a trading Web site and you would like to display the BTC/EUR order book in real time to the end user.
+THE TASK
+- Part 1 -
+Display the BTC/EUR market depth chart to the end user on a simple website; you can get the data from Bitstamp or any other exchange. The back-end should be written in .NET, for the front-end you can choose your poison freely.
+To make our task a bit more challenging, you should keep an audit log of every order book snapshot that is [potentially] displayed to the end user with the timestamp of when it was acquired.
+- Part 2 -
+Allow the user of your Web site to enter an amount of BTC that they would like to buy. Show to the user the price (quote) for his intended purchase. Update it in real-time as you continuously acquire the order book. Consult the Sowa Labs Team if you need more info :-)
+BONUS TASKS
+Write some tests for your code.
+OTHER NOTES
+Please use GIT while developing the code. Keep it as simple as the nature of this problem allows it. Be ready to explain / demonstrate your solution in our office (or in a remote chat).
+May the force be with you.
