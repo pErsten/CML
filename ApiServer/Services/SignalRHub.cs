@@ -32,9 +32,14 @@ namespace ApiServer.Services
             this.service = service;
         }
 
-        public async Task SubscribeToWalletUpdates(string username)
+        public async Task SubscribeToWalletUpdates()
         {
-            await service.SubscribeToWalletUpdates(username, Context.ConnectionId);
+            if (!Context.User.Identity.IsAuthenticated)
+            {
+                return;
+            }
+            var accountGuid = Context.User.Identity.Name;
+            await service.SubscribeToWalletUpdates(accountGuid, Context.ConnectionId);
         }
 
         public async Task ClientGetUserBalance()
@@ -69,13 +74,13 @@ namespace ApiServer.Services
 
         private Dictionary<string, string> _subscriptions = new Dictionary<string, string>();
 
-        public async Task SubscribeToWalletUpdates(string username, string connectionId)
+        public async Task SubscribeToWalletUpdates(string accountGuid, string connectionId)
         {
-            _subscriptions[username] = connectionId;
+            _subscriptions[accountGuid] = connectionId;
         }
-        public async Task SendWalletUpdate(IHubClients clients, string username, AccountWalletDto wallet)
+        public async Task SendWalletUpdate(IHubClients clients, string accountGuid, AccountWalletDto wallet)
         {
-            if (_subscriptions.TryGetValue(username, out var connectionId))
+            if (_subscriptions.TryGetValue(accountGuid, out var connectionId))
             {
                 await clients.Client(connectionId).SendAsync("WalletUpdate", wallet);
             }

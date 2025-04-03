@@ -1,7 +1,10 @@
 ﻿@page "/"
+@using System.Globalization
 @using System.Net
+@using System.Net.Http.Headers
 @using Common
 @using Common.Data.Entities
+@using Common.Data.Enums
 @using Common.Dtos
 @using Microsoft.AspNetCore.Connections
 @using Microsoft.AspNetCore.Http.Connections.Client
@@ -35,24 +38,55 @@ else
     <MudChart ChartOptions="bidOptions" ChartType="ChartType.StackedBar" ChartSeries="@BidSeries" XAxisLabels="@BidLabels" Height="350px" />
     <MudChart ChartOptions="askOptions" ChartType="ChartType.StackedBar" ChartSeries="@AskSeries" XAxisLabels="@AskLabels" Height="350px" />
 </div>
+@if (!username.IsNullOrEmpty())
+{
+    <EditForm Model="@model" OnValidSubmit="OnBidCreate">
+        <MudGrid>
+            <MudItem xs="12" sm="7">
+                <MudCard>
+                    <MudCardContent>
+                        <MudTextField Label="Amount" @bind-Value="model.Amount" For="@(() => model.Amount)" Format="F2" Culture="@CultureInfo.InvariantCulture"/>
+                    </MudCardContent>
+                    <MudCardContent>
+                        <MudTextField Label="Price" @bind-Value="model.Price" For="@(() => model.Price)" Format="F2" Culture="@CultureInfo.InvariantCulture" />
+                    </MudCardContent>
+                    <MudCardContent>
+                        <MudSelect @bind-Value="model.Type" Label="Select order type" HelperText="String" Placeholder="Please Select">
+                            <MudSelectItem Value="@OrderTypeEnum.Bid">Bid</MudSelectItem>
+                            <MudSelectItem Value="@OrderTypeEnum.Ask">Ask</MudSelectItem>
+                        </MudSelect>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Create Order</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    </EditForm>
+    <span style="color: red">@errorMsg</span>
+    <span style="color: green">@okMsg</span>
+}
 @code {
     private HubConnection hubConnection;
     public List<ChartSeries> BidSeries = new List<ChartSeries>();
     public string[] BidLabels = new string[] { };
     public List<ChartSeries> AskSeries = new List<ChartSeries>();
     public string[] AskLabels = new string[] { };
-    private string rr;
+    private string errorMsg;
+    private string okMsg;
     private decimal fiatBalance;
     private decimal cryptoBalance;
     private decimal btcRate;
     private string username;
+
+    private CreateOrderRequest model = new CreateOrderRequest();
 
     ChartOptions bidOptions = new() { ChartPalette = new string[] { "green" } };
     ChartOptions askOptions = new() { ChartPalette = new string[] { "red" } };
 
     protected override async Task OnInitializedAsync()
     {
-        
+
         string serverUrl = configuration.GetValue<string>("ServerUrl"); 
         username = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "username");
 
@@ -67,7 +101,7 @@ else
             })
             .WithAutomaticReconnect()
             .Build();
-            
+
         hubConnection.On<List<BitcoinOrdersDto>, List<BitcoinOrdersDto>>("OrdersUpdate", (openBids, openAsks) =>
         {
             BidSeries = new List<ChartSeries>
@@ -101,25 +135,40 @@ else
             btcRate = rate;
             StateHasChanged();
         });
-        
+
         await hubConnection.StartAsync();
         await hubConnection.InvokeAsync("ClientGetBitcoinRate");
         await hubConnection.InvokeAsync("ClientGetOrders");
         if (!string.IsNullOrEmpty(username))
         {
-            await hubConnection.InvokeAsync("SubscribeToWalletUpdates", username);
+            await hubConnection.InvokeAsync("SubscribeToWalletUpdates");
             await hubConnection.InvokeAsync("ClientGetUserBalance");
         }
 
         StateHasChanged();
     }
-
-    private async Task GetBitcoinData()
+    
+    private async Task OnBidCreate(EditContext context)
     {
+        errorMsg = string.Empty;
+        okMsg = string.Empty;
+
         string serverUrl = configuration.GetValue<string>("ServerUrl");
         using var cli = new HttpClient();
-        var response = await cli.GetAsync($"{serverUrl}/home/get-bitcoin-data");
+        var token = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        cli.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await cli.PostAsJsonAsync($"{serverUrl}/orders/createOrder", model);
+        if (response.IsSuccessStatusCode)
+        {
+            var text = await response.Content.ReadAsStringAsync();
+            okMsg = text;
+        }
+        else
+        {
+            errorMsg = response.ReasonPhrase;
+        }
 
+        StateHasChanged();
     }
 
 }

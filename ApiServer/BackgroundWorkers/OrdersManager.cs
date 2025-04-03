@@ -216,10 +216,10 @@ namespace ApiServer.BackgroundWorkers
                         await dbContext.SaveChangesAsync(stoppingToken);
 
                         var accIds = updatedWalletsOfAccs.Select(x => x.AccountId).Distinct();
-                        var accountLogins = await dbContext.Accounts.Where(x => accIds.Contains(x.Id))
-                            .ToDictionaryAsync(x => x.Id, x => x.Login);
+                        var accountGuids = await dbContext.Accounts.Where(x => accIds.Contains(x.Id))
+                            .ToDictionaryAsync(x => x.Id, x => x.AccountId, stoppingToken);
                         var tasks = updatedWalletsOfAccs.Distinct().Select(x =>
-                            hubService.SendWalletUpdate(messagesHub.Clients, accountLogins[x.AccountId],
+                            hubService.SendWalletUpdate(messagesHub.Clients, accountGuids[x.AccountId],
                                 new AccountWalletDto(x)));
                         await Task.WhenAll(tasks);
                         updatedWalletsOfAccs.Clear();
