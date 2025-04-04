@@ -1,91 +1,9 @@
-using ApiServer.BackgroundWorkers;
 using ApiServer.Controllers;
-using Common.Data;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using ApiServer.Services;
-using Common.Data.Entities;
-using System.Threading.Channels;
+using ApiServer;
 
 var builder = WebApplication.CreateBuilder(args);
-var services = builder.Services;
-
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-services.AddEndpointsApiExplorer();
-services.AddSwaggerGen();
-
-var channel = Channel.CreateUnbounded<BitcoinOrder>(new UnboundedChannelOptions
-{
-    SingleReader = true
-});
-services.AddSingleton(channel); 
-services.AddSingleton(channel.Writer); 
-services.AddSingleton(channel.Reader);
-
-var sqlConnectionStr = builder.Configuration.GetValue<string>("Databases:SqlConnection");
-services.AddDbContext<SqlContext>(options => options.UseSqlServer(sqlConnectionStr));
-services.AddSingleton<JwtTokenGenerator>();
-services.AddScoped<AuthService>();
-services.AddScoped<WalletService>();
-services.AddSingleton<SignalRService>();
-services.AddHttpContextAccessor();
-
-services.AddHostedService<BtcRatesFetcher>();
-services.AddHostedService<OrdersManager>();
-
-var jwtKey = builder.Configuration.GetValue<string>("Auth:JwtKey");
-services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateLifetime = true,
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-        };
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                var accessToken = context.Request.Query["access_token"];
-
-                if (!string.IsNullOrEmpty(accessToken) &&
-                    context.HttpContext.Request.Path.StartsWithSegments("/messages"))
-                {
-                    context.Token = accessToken;
-                }
-                return Task.CompletedTask;
-            },
-            OnTokenValidated = context =>
-            {
-                Console.WriteLine($"[DEBUG] Token validated for: {context.Principal.Identity.Name}");
-                return Task.CompletedTask;
-            },
-            OnAuthenticationFailed = context =>
-            {
-                Console.WriteLine($"[ERROR] Token authentication failed: {context.Exception.Message}");
-                return Task.CompletedTask;
-            }
-        };
-    });
-services.AddAuthorization();
-services.AddSignalR();
-services.AddCors(options =>
-{
-    options.AddPolicy("WebClient",
-        policy => policy.WithOrigins("https://localhost:7121")
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials());
-});
-
-
-var app = builder.Build();
+var app = builder.ConfigureServices();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
