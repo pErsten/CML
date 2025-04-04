@@ -32,7 +32,7 @@ namespace ApiServer
             services.AddSingleton<JwtTokenGenerator>();
             services.AddScoped<AuthService>();
             services.AddScoped<WalletService>();
-            services.AddSingleton<SignalRService>();
+            services.AddSingleton<BlazorSignalRService>();
             services.AddHttpContextAccessor();
 
             services.AddHostedService<BtcRatesFetcher>();

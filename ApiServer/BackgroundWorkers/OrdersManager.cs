@@ -1,4 +1,5 @@
 ﻿using System.Threading.Channels;
+using ApiServer.Controllers;
 using ApiServer.Services;
 using Common;
 using Common.Data;
@@ -81,7 +82,7 @@ namespace ApiServer.BackgroundWorkers
 
                     var dbContext = scope.ServiceProvider.GetService<SqlContext>();
                     var walletService = scope.ServiceProvider.GetService<WalletService>();
-                    var hubService = scope.ServiceProvider.GetService<SignalRService>();
+                    var hubService = scope.ServiceProvider.GetService<BlazorSignalRService>();
                     var isChanged = false;
                     while (highestBid?.BtcPrice >= smallestAsk?.BtcPrice)
                     {
@@ -174,7 +175,7 @@ namespace ApiServer.BackgroundWorkers
                         isChanged = true;
                     }
 
-                    var messagesHub = scope.ServiceProvider.GetService<IHubContext<SignalRHub>>();
+                    var messagesHub = scope.ServiceProvider.GetService<IHubContext<BlazorSignalRHub>>();
                     var bidsAgg = Enumerable.Range(0, Constants.OrdersShown).Select(x => new BitcoinOrdersDto())
                         .ToList();
                     var asksAgg = Enumerable.Range(0, Constants.OrdersShown).Select(x => new BitcoinOrdersDto())

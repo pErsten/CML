@@ -1,5 +1,4 @@
 using ApiServer.Controllers;
-using ApiServer.Services;
 using ApiServer;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,7 +12,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("WebClient");
-app.MapHub<SignalRHub>("/messages");
+app.MapHub<BlazorSignalRHub>("/messages");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 

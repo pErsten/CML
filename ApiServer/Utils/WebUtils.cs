@@ -1,4 +1,4 @@
-﻿namespace ApiServer.Services
+﻿namespace ApiServer.Utils
 {
     public static class WebUtils
     {
