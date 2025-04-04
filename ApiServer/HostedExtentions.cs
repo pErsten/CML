@@ -12,6 +12,10 @@ namespace ApiServer
 {
     public static class HostedExtensions
     {
+        /// <summary>
+        /// Configures the services required for the web application, including database context, authentication, 
+        /// SignalR, CORS policy, and background services.
+        /// </summary>
         public static WebApplication ConfigureServices(this WebApplicationBuilder builder)
         {
             var services = builder.Services;
