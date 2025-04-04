@@ -8,6 +8,6 @@
         public const int OrdersShown = 6;
 
         // Workers
-        public const int CurrenciesFetcherDelayMs = 5000;
+        public const int CurrenciesFetcherDelaySecs = 1;
     }
 }

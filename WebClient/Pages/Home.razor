@@ -15,16 +15,40 @@
 @inject IJSRuntime _jsRuntime;
 
 <PageTitle>Chart</PageTitle>
-
-<h1>Bitcoin chart</h1>
-<h1>Current rate: @btcRate</h1>
+<MudCard>
+    <MudCardContent Class="d-flex gap-4">
+        <div class = "flex-initial">
+            <MudText Typo="Typo.h4">BTC/EUR:
+                <MudText Inline="true" Typo="Typo.h4" Color="@(isUpTrend.HasValue ? (isUpTrend.Value ? Color.Success : Color.Error) : Color.Default)"><b>@btcRate</b></MudText>
+            </MudText>
+        </div>
+    </MudCardContent>
+</MudCard>
 
 @if (!username.IsNullOrEmpty())
 {
-    <h3>Welcome back, @username!</h3>
-    <div>
-        Your fiat balance: @fiatBalance <br/>
-        Your crypto balance: @cryptoBalance
+    <MudText Class="mt-2" Typo="Typo.h5" Align="Align.Center">Welcome back, @username!</MudText>
+    <div class="d-flex gap-4">
+        <MudCard>
+            <MudCardContent Class="d-flex gap-4">
+                <div class="flex-initial">
+                    <MudText Typo="Typo.h5">
+                        BTC wallet:
+                        <MudText Inline="true" Typo="Typo.h5">@cryptoBalance</MudText>
+                    </MudText>
+                </div>
+            </MudCardContent>
+        </MudCard>
+        <MudCard>
+            <MudCardContent Class="d-flex gap-4">
+                <div class="flex-initial">
+                    <MudText Typo="Typo.h5">
+                        EUR wallet:
+                        <MudText Inline="true" Typo="Typo.h5">@fiatBalance</MudText>
+                    </MudText>
+                </div>
+            </MudCardContent>
+        </MudCard>
     </div>
 }
 else
@@ -35,7 +59,7 @@ else
 
 <div class="d-flex flex-row">
 
-    <MudChart ChartOptions="bidOptions" ChartType="ChartType.StackedBar" ChartSeries="@BidSeries" XAxisLabels="@BidLabels" Height="350px" />
+    <MudChart  ChartOptions="bidOptions" ChartType="ChartType.StackedBar" ChartSeries="@BidSeries" XAxisLabels="@BidLabels" Height="350px" />
     <MudChart ChartOptions="askOptions" ChartType="ChartType.StackedBar" ChartSeries="@AskSeries" XAxisLabels="@AskLabels" Height="350px" />
 </div>
 @if (!username.IsNullOrEmpty())
@@ -78,6 +102,7 @@ else
     private decimal cryptoBalance;
     private decimal btcRate;
     private string username;
+    private bool? isUpTrend;
 
     private CreateOrderRequest model = new CreateOrderRequest();
 
@@ -132,6 +157,10 @@ else
 
         hubConnection.On<decimal>("BtcRateUpdate", (rate) =>
         {
+            if (btcRate != 0)
+            {
+                isUpTrend = rate >= btcRate;
+            }
             btcRate = rate;
             StateHasChanged();
         });

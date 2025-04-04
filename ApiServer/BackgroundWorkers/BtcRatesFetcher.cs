@@ -51,7 +51,7 @@ namespace ApiServer.BackgroundWorkers
                 while (!stoppingToken.IsCancellationRequested)
                 {
                     await RunAsync(stoppingToken);
-                    await Task.Delay(Constants.CurrenciesFetcherDelayMs, stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(Constants.CurrenciesFetcherDelaySecs).Milliseconds, stoppingToken);
                 }
             }
             catch (Exception ex)
