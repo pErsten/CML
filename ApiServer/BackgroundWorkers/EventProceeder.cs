@@ -3,9 +3,9 @@ using System.Threading.Channels;
 using ApiServer.Controllers;
 using ApiServer.Services;
 using Common.Data;
-using Common.Data.Dtos;
 using Common.Data.Entities;
 using Common.Data.Enums;
+using Common.Data.Models;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 

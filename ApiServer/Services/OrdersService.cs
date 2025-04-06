@@ -1,8 +1,8 @@
 ﻿using Common;
 using Common.Data;
-using Common.Data.Dtos;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using Common.Data.Models;
 
 namespace ApiServer.Services
 {

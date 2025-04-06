@@ -1,7 +1,7 @@
 ﻿using Common;
 using Common.Data;
-using Common.Data.Dtos;
 using Common.Data.Enums;
+using Common.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApiServer.Services;

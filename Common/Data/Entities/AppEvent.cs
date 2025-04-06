@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Common.Data.Dtos;
 using Common.Data.Enums;
+using Common.Data.Models;
 
 namespace Common.Data.Entities
 {

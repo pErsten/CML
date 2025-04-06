@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Threading.Channels;
-using Common.Data.Dtos;
+using Common.Data.Models;
 
 namespace ApiServer
 {
@@ -94,10 +94,11 @@ namespace ApiServer
                 });
             services.AddAuthorization();
             services.AddSignalR();
+            var webClientUrl = builder.Configuration.GetValue<string>("WebClientUrl");
             services.AddCors(options =>
             {
                 options.AddPolicy("WebClient",
-                    policy => policy.WithOrigins("https://localhost:7121")
+                    policy => policy.WithOrigins(webClientUrl)
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials());

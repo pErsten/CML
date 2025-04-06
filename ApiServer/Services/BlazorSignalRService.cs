@@ -4,7 +4,7 @@ using Common.Data.Enums;
 using Common.Data;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using Common.Data.Dtos;
+using Common.Data.Models;
 
 namespace ApiServer.Services;
 

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Threading.Channels;
 using Common.Data.Enums;
 using ApiServer.Utils;
-using Common.Data.Dtos;
+using Common.Data.Models;
 
 namespace ApiServer.Controllers;
 

@@ -1,4 +1,4 @@
-﻿namespace Common.Data.Dtos
+﻿namespace Common.Data.Models
 {
     public class OrderBookSnapshotSelectionTableDto
     {
