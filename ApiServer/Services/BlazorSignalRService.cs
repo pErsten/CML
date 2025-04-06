@@ -95,27 +95,15 @@ public class BlazorSignalRService
     /// </summary>
     /// <param name="clients">The SignalR caller clients proxy.</param>
     /// <param name="connectionId">The SignalR connection ID of the requesting client.</param>
-    public async Task ClientGetOrders(IHubCallerClients clients, string connectionId)
+    public async Task ClientGetOrders(IHubCallerClients clients, int id, bool isRealTime, string connectionId)
     {
         using var scope = scopeFactory.CreateScope();
-        var dbContext = scope.ServiceProvider.GetService<SqlContext>();
-        var snapshot = await dbContext.OrderBookSnapshots.OrderByDescending(x => x.Id).AsNoTracking().FirstOrDefaultAsync();
-        if (snapshot is null)
-            return;
-        var bidsAgg = JsonSerializer.Deserialize<List<BitcoinOrdersDto>>(snapshot.BidsJson)!;
-        var asksAgg = JsonSerializer.Deserialize<List<BitcoinOrdersDto>>(snapshot.AsksJson)!;
-        if (bidsAgg.Count > Constants.OrdersShown)
-            bidsAgg = bidsAgg[^Constants.OrdersShown..];
-        if (asksAgg.Count > Constants.OrdersShown)
-            asksAgg = asksAgg[^Constants.OrdersShown..];
-        
-        await clients.Client(connectionId).SendAsync("OrdersUpdate", new OrderBookSnapshotDto
+        var orderService = scope.ServiceProvider.GetService<OrdersService>();
+        var snapshot = await orderService.GetOrderBookSnapshot(isRealTime, id);
+        if (snapshot is not null)
         {
-            Id = snapshot.Id,
-            OpenAsksAgg = asksAgg,
-            OpenBidsAgg = bidsAgg,
-            UtcCreated = snapshot.UtcCreated
-        });
+            await clients.Client(connectionId).SendAsync("OrdersUpdate", snapshot);
+        }
     }
 
     /// <summary>
@@ -148,5 +136,14 @@ public class BlazorSignalRService
         var chartData = await stockMarketService.GetBitcoinStockPrices(splitType);
 
         await clients.All.SendAsync("BitcoinChartUpdate", chartData);
+    }
+
+    public async Task ClientGetOrderBookSnapshots(IHubCallerClients clients, string connectionId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var orderService = scope.ServiceProvider.GetService<OrdersService>();
+        var snapshots = await orderService.GetSnapshotsSelectionTableDtos();
+
+        await clients.Client(connectionId).SendAsync("OrderBookSnapshotsResponse", snapshots);
     }
 }

@@ -60,14 +60,20 @@ namespace ApiServer.Controllers
         /// <summary>
         /// Sends the current order book (open bids and asks) to the connected client.
         /// </summary>
-        public async Task ClientGetOrders()
-        {
-            await service.ClientGetOrders(Clients, Context.ConnectionId);
-        }
-
         public async Task ClientGetBitcoinChart(StockMarketSplitTypeEnum splitType)
         {
             await service.ClientGetBitcoinChart(Clients, splitType, Context.ConnectionId);
+        }
+
+
+        public async Task ClientGetOrders(int? id)
+        {
+            await service.ClientGetOrders(Clients, id ?? 0, id is null, Context.ConnectionId);
+        }
+
+        public async Task ClientGetOrderBookSnapshots()
+        {
+            await service.ClientGetOrderBookSnapshots(Clients, Context.ConnectionId);
         }
     }
 }

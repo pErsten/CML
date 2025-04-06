@@ -46,6 +46,7 @@ namespace ApiServer
             services.AddScoped<StockMarketService>();
             services.AddScoped<AuthService>();
             services.AddScoped<WalletService>();
+            services.AddScoped<OrdersService>();
             services.AddSingleton<JwtTokenGenerator>();
             services.AddSingleton<BlazorSignalRService>();
             services.AddHttpContextAccessor();

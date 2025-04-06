@@ -1,0 +1,110 @@
+﻿@using ApexCharts
+@using Common.Data.Dtos
+@using Microsoft.AspNetCore.SignalR.Client
+@using Color = MudBlazor.Color
+
+<MudCard>
+    <MudGrid>
+        <MudItem xs="6" Style="height:400px">
+            <MudText Typo="Typo.h6" Color="Color.Warning">@(OldSnapshotId is null ? "" : "warning: you're reviewing selected snapshot, it'll not update in real time")</MudText>
+            <ApexChart TItem="BitcoinOrdersDto"
+                       Title="Order Book"
+                       @ref="depthChart"
+                       Height="360">
+                <ApexPointSeries TItem="BitcoinOrdersDto"
+                                 Name="Bids"
+                                 Items="Bids"
+                                 XValue="@(x => x.Price)"
+                                 YValue="@(x => x.Amount)"
+                                 Color="#00C853"/>
+                <ApexPointSeries TItem="BitcoinOrdersDto"
+                                 Name="Asks"
+                                 Items="Asks"
+                                 XValue="@(x => x.Price)"
+                                 YValue="@(x => x.Amount)"
+                                 Color="#D50000"/>
+            </ApexChart>
+        </MudItem>
+        <MudItem xs="6" Style="height:400px">
+            <MudTable T="OrderBookSnapshotSelectionTableDto"
+                      Items="@orderBookSnapshotSelectionTable"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm"
+                      @ref="snapshotsTable"
+                      RowClass="cursor-pointer"
+                      OnRowClick="RowClickEvent"
+                      Height="360px">
+                <HeaderContent>
+                    <MudTh>Snapshot Date (UTC)</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Snapshot Date (UTC)">@context.UtcCreated</MudTd>
+                </RowTemplate>
+            </MudTable>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="RenewRealTimeOrders"><MudText>Show real time order book</MudText></MudButton>
+        </MudItem>
+    </MudGrid>
+</MudCard>
+
+@code {
+    [Parameter]
+    public HubConnection HubConnection { get; set; }
+    private ApexChart<BitcoinOrdersDto> depthChart;
+
+    private List<BitcoinOrdersDto> Bids = [];
+    private List<BitcoinOrdersDto> Asks = [];
+
+    private int? OldSnapshotId;
+    private List<OrderBookSnapshotSelectionTableDto> orderBookSnapshotSelectionTable = [];
+    private MudTable<OrderBookSnapshotSelectionTableDto> snapshotsTable;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        HubConnection.On<OrderBookSnapshotDto>("OrdersUpdate", async snapshot =>
+        {
+            Bids = snapshot.OpenBidsAgg;
+            Asks = snapshot.OpenAsksAgg;
+
+            if (snapshot.IsRealTime)
+            {
+                orderBookSnapshotSelectionTable.Add(new OrderBookSnapshotSelectionTableDto
+                {
+                    Id = snapshot.Id,
+                    UtcCreated = snapshot.UtcCreated
+                });
+            }
+            else
+            {
+                OldSnapshotId = snapshot.Id;
+            }
+            StateHasChanged();
+            await depthChart.UpdateSeriesAsync();
+        });
+        HubConnection.On<List<OrderBookSnapshotSelectionTableDto>>("OrderBookSnapshotsResponse", async snapshots =>
+        {
+            orderBookSnapshotSelectionTable = snapshots.OrderByDescending(x => x.Id).ToList();
+            StateHasChanged();
+            await depthChart.UpdateSeriesAsync();
+        });
+
+        await HubConnection.InvokeAsync("ClientGetOrders", null);
+        await HubConnection.InvokeAsync("ClientGetOrderBookSnapshots");
+    }
+
+    private async Task RowClickEvent(TableRowClickEventArgs<OrderBookSnapshotSelectionTableDto> tableRowClickEventArgs)
+    {
+        if (tableRowClickEventArgs.Item is null || OldSnapshotId == tableRowClickEventArgs.Item?.Id)
+        {
+            return;
+        }
+
+        HubConnection.InvokeAsync("ClientGetOrders", tableRowClickEventArgs.Item!.Id);
+    }
+
+    private async Task RenewRealTimeOrders()
+    {
+        OldSnapshotId = null;
+        await HubConnection.InvokeAsync("ClientGetOrders", null);
+    }
+}

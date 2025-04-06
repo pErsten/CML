@@ -60,46 +60,42 @@ else
     <BitcoinCandlestickGraph HubConnection="hubConnection">
 
     </BitcoinCandlestickGraph>
+    <DepthChart HubConnection="hubConnection">
+
+    </DepthChart>
+        @if (!username.IsNullOrEmpty())
+        {
+            <EditForm Model="@model" OnValidSubmit="OnBidCreate">
+                <MudGrid Class="flex-grow-1">
+                    <MudItem xs="3" sm="7">
+                        <MudCard>
+                            <MudCardContent>
+                                <MudTextField Label="Amount" @bind-Value="model.Amount" For="@(() => model.Amount)" Format="F2" Culture="@CultureInfo.InvariantCulture"/>
+                            </MudCardContent>
+                            <MudCardContent>
+                                <MudTextField Label="Price" @bind-Value="model.Price" For="@(() => model.Price)" Format="F2" Culture="@CultureInfo.InvariantCulture"/>
+                            </MudCardContent>
+                            <MudCardContent>
+                                <MudSelect @bind-Value="model.Type" Label="Select order type" HelperText="String" Placeholder="Please Select">
+                                    <MudSelectItem Value="@OrderTypeEnum.Bid">Bid</MudSelectItem>
+                                    <MudSelectItem Value="@OrderTypeEnum.Ask">Ask</MudSelectItem>
+                                </MudSelect>
+                            </MudCardContent>
+                            <MudCardActions>
+                                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Class="ml-auto">Create Order</MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+                </MudGrid>
+            </EditForm>
+            <span style="color: red">@errorMsg</span>
+            <span style="color: green">@okMsg</span>
+        }
 }
 
-<ApexChart TItem="BitcoinOrdersDto" Title="Depth Chart" @ref="depthChart">
-    <ApexPointSeries TItem="BitcoinOrdersDto" Name="Bids" Items="Bidss"
-    XValue="@(x => x.Price)" YValue="@(x => x.Amount)"
-    Color="#00C853" />
-    <ApexPointSeries TItem="BitcoinOrdersDto" Name="Asks" Items="Askss"
-    XValue="@(x => x.Price)" YValue="@(x => x.Amount)"
-    Color="#D50000" />
-</ApexChart>
 
 
-@if (!username.IsNullOrEmpty())
-{
-    <EditForm Model="@model" OnValidSubmit="OnBidCreate">
-        <MudGrid>
-            <MudItem xs="12" sm="7">
-                <MudCard>
-                    <MudCardContent>
-                        <MudTextField Label="Amount" @bind-Value="model.Amount" For="@(() => model.Amount)" Format="F2" Culture="@CultureInfo.InvariantCulture"/>
-                    </MudCardContent>
-                    <MudCardContent>
-                        <MudTextField Label="Price" @bind-Value="model.Price" For="@(() => model.Price)" Format="F2" Culture="@CultureInfo.InvariantCulture" />
-                    </MudCardContent>
-                    <MudCardContent>
-                        <MudSelect @bind-Value="model.Type" Label="Select order type" HelperText="String" Placeholder="Please Select">
-                            <MudSelectItem Value="@OrderTypeEnum.Bid">Bid</MudSelectItem>
-                            <MudSelectItem Value="@OrderTypeEnum.Ask">Ask</MudSelectItem>
-                        </MudSelect>
-                    </MudCardContent>
-                    <MudCardActions>
-                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Class="ml-auto">Create Order</MudButton>
-                    </MudCardActions>
-                </MudCard>
-            </MudItem>
-        </MudGrid>
-    </EditForm>
-    <span style="color: red">@errorMsg</span>
-    <span style="color: green">@okMsg</span>
-}
+
 @code {
     private HubConnection hubConnection;
     private string errorMsg;
@@ -111,14 +107,9 @@ else
     private bool? isUpTrend;
     private CreateOrderRequest model = new CreateOrderRequest();
 
-    private ApexChart<BitcoinOrdersDto> depthChart;
-
-    private List<BitcoinOrdersDto> Bidss = new();
-    private List<BitcoinOrdersDto> Askss = new();
 
     protected override async Task OnInitializedAsync()
     {
-
         string serverUrl = configuration.GetValue<string>("ServerUrl"); 
         username = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "username");
 
@@ -134,13 +125,6 @@ else
             .WithAutomaticReconnect()
             .Build();
 
-        hubConnection.On<OrderBookSnapshotDto>("OrdersUpdate", async snapshot =>
-        {
-            Bidss = snapshot.OpenBidsAgg;
-            Askss = snapshot.OpenAsksAgg;
-            StateHasChanged();
-            await depthChart.UpdateSeriesAsync();
-        });
 
         hubConnection.On<AccountWalletDto>("WalletUpdate", (wallet) =>
         {
@@ -167,7 +151,6 @@ else
 
         await hubConnection.StartAsync();
         await hubConnection.InvokeAsync("ClientGetBitcoinRate");
-        await hubConnection.InvokeAsync("ClientGetOrders");
         if (!string.IsNullOrEmpty(username))
         {
             await hubConnection.InvokeAsync("SubscribeToWalletUpdates");
