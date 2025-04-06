@@ -1,4 +1,4 @@
-﻿namespace Common.Dtos
+﻿namespace Common.Data.Dtos
 {
     public class BitcoinOrdersDto
     {

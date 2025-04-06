@@ -1,9 +1,9 @@
 ﻿using Common;
 using Common.Data.Enums;
 using Common.Data;
-using Common.Dtos;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Common.Data.Dtos;
 
 namespace ApiServer.Services;
 

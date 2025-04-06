@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using Common.Data.Enums;
 
-namespace Common.Dtos;
+namespace Common.Data.Dtos;
 
 public class CreateOrderRequest
 {

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace Common.Dtos
+namespace Common.Data.Dtos
 {
     public class BtcRatesFetcherResponse
     {

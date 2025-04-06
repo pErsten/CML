@@ -2,8 +2,8 @@
 using ApiServer.Services;
 using Common;
 using Common.Data;
+using Common.Data.Dtos;
 using Common.Data.Entities;
-using Common.Dtos;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json.Linq;
 
@@ -47,11 +47,12 @@ namespace ApiServer.BackgroundWorkers
                 var scope = scopeFactory.CreateScope();
                 await using var dbContext = scope.ServiceProvider.GetService<SqlContext>();
                 lastRate = dbContext.BitcoinExchanges.OrderByDescending(x => x.Id).FirstOrDefault()?.BTCRate ?? 0m;
+                var msDelay = (int)TimeSpan.FromSeconds(Constants.CurrenciesFetcherDelaySecs).TotalMilliseconds;
 
                 while (!stoppingToken.IsCancellationRequested)
                 {
                     await RunAsync(stoppingToken);
-                    await Task.Delay(TimeSpan.FromSeconds(Constants.CurrenciesFetcherDelaySecs).Milliseconds, stoppingToken);
+                    await Task.Delay(msDelay, stoppingToken);
                 }
             }
             catch (Exception ex)

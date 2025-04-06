@@ -15,3 +15,10 @@ public enum OrderStatusEnum
     Cancelled = 3,
     PartiallyCancelled = 4
 }
+
+public enum EventTypeEnum
+{
+    OrderBookUpdated = 1,
+    UserWalletBalanceChanged = 2,
+    BitcoinRateChanged = 3
+}

@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Threading.Channels;
+using Common.Data.Dtos;
 
 namespace ApiServer
 {
@@ -23,13 +24,21 @@ namespace ApiServer
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
 
-            var channel = Channel.CreateUnbounded<BitcoinOrder>(new UnboundedChannelOptions
+            var ordersManagerChannel = Channel.CreateUnbounded<BitcoinOrder>(new UnboundedChannelOptions
             {
                 SingleReader = true
             });
-            services.AddSingleton(channel);
-            services.AddSingleton(channel.Writer);
-            services.AddSingleton(channel.Reader);
+            services.AddSingleton(ordersManagerChannel);
+            services.AddSingleton(ordersManagerChannel.Writer);
+            services.AddSingleton(ordersManagerChannel.Reader);
+
+            var eventsChannel = Channel.CreateUnbounded<EventDto>(new UnboundedChannelOptions
+            {
+                SingleReader = true
+            });
+            services.AddSingleton(eventsChannel);
+            services.AddSingleton(eventsChannel.Writer);
+            services.AddSingleton(eventsChannel.Reader);
 
             var sqlConnectionStr = builder.Configuration.GetValue<string>("Databases:SqlConnection");
             services.AddDbContext<SqlContext>(options => options.UseSqlServer(sqlConnectionStr));
@@ -41,6 +50,7 @@ namespace ApiServer
 
             services.AddHostedService<BtcRatesFetcher>();
             services.AddHostedService<OrdersManager>();
+            services.AddHostedService<EventProceeder>();
 
             var jwtKey = builder.Configuration.GetValue<string>("Auth:JwtKey");
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

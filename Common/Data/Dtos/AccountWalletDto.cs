@@ -1,6 +1,6 @@
 ﻿using Common.Data.Entities;
 
-namespace Common.Dtos
+namespace Common.Data.Dtos
 {
     public class AccountWalletDto
     {
@@ -11,9 +11,9 @@ namespace Common.Dtos
         public AccountWalletDto() { }
         public AccountWalletDto(AccountWallet wallet)
         {
-            this.AccountId = wallet.AccountId;
-            this.Currency = wallet.Currency;
-            this.Amount = wallet.Amount;
+            AccountId = wallet.AccountId;
+            Currency = wallet.Currency;
+            Amount = wallet.Amount;
         }
     }
 }
