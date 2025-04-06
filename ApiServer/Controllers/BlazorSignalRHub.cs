@@ -1,4 +1,5 @@
 ﻿using ApiServer.Services;
+using Common.Data.Enums;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ApiServer.Controllers
@@ -62,6 +63,11 @@ namespace ApiServer.Controllers
         public async Task ClientGetOrders()
         {
             await service.ClientGetOrders(Clients, Context.ConnectionId);
+        }
+
+        public async Task ClientGetBitcoinChart(StockMarketSplitTypeEnum splitType)
+        {
+            await service.ClientGetBitcoinChart(Clients, splitType, Context.ConnectionId);
         }
     }
 }

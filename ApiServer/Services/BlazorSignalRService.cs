@@ -131,4 +131,22 @@ public class BlazorSignalRService
 
         await clients.Client(connectionId).SendAsync("BtcRateUpdate", rate);
     }
+
+    public async Task ClientGetBitcoinChart(IHubCallerClients clients, StockMarketSplitTypeEnum splitType, string connectionId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var stockMarketService = scope.ServiceProvider.GetService<StockMarketService>();
+        var chartData = await stockMarketService.GetBitcoinStockPrices(splitType);
+
+        await clients.Client(connectionId).SendAsync("BitcoinChartUpdate", chartData);
+    }
+
+    public async Task SendBitcoinChartUpdate(IHubClients clients, StockMarketSplitTypeEnum splitType)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var stockMarketService = scope.ServiceProvider.GetService<StockMarketService>();
+        var chartData = await stockMarketService.GetBitcoinStockPrices(splitType);
+
+        await clients.All.SendAsync("BitcoinChartUpdate", chartData);
+    }
 }

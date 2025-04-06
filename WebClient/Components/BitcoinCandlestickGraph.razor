@@ -1,0 +1,41 @@
+﻿@using ApexCharts
+@using Common.Data.Dtos
+@using Common.Data.Enums
+@using Microsoft.AspNetCore.SignalR.Client
+
+<ApexChart TItem="BitcoinPriceCandle"
+           XAxisType="XAxisType.Datetime"
+           @ref=chart
+           Height="350">
+    <ApexCandleSeries TItem="BitcoinPriceCandle"
+                      Items="graphData"
+                      Name="Apex Stock Price"
+                      XValue="@(e => e.CandleStartUtc)"
+                      Open="@(e => e.Open)"
+                      High="@(e => e.High)"
+                      Low="@(e => e.Low)"
+                      Close="@(e => e.Close)"
+                      OrderByDescending="e=> e.X" />
+</ApexChart>
+@code {
+    [Parameter]
+    public HubConnection HubConnection { get; set; }
+
+    private List<BitcoinPriceCandle> graphData = [];
+    private ApexChart<BitcoinPriceCandle> chart;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        HubConnection.On<List<BitcoinPriceCandle>>("BitcoinChartUpdate", async graphData =>
+        {
+            this.graphData = graphData;
+
+            StateHasChanged();
+            await chart.UpdateSeriesAsync();
+        });
+
+        await HubConnection.InvokeAsync("ClientGetBitcoinChart", StockMarketSplitTypeEnum.FifteenMins);
+    }
+
+}

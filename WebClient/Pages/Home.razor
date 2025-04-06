@@ -7,7 +7,7 @@
 @using Microsoft.IdentityModel.Tokens
 @using ApexCharts
 @using Common.Data.Dtos
-@using Common.Data.Entities
+@using WebClient.Components
 @inject IConfiguration configuration
 @inject NavigationManager Navigation
 @inject IJSRuntime _jsRuntime;
@@ -53,6 +53,13 @@ else
 {
     <h3>Welcome to the Bitcoin chart!</h3>
     <div>to see your balances you have to log in</div>
+}
+
+@if (hubConnection is not null)
+{
+    <BitcoinCandlestickGraph HubConnection="hubConnection">
+
+    </BitcoinCandlestickGraph>
 }
 
 <ApexChart TItem="BitcoinOrdersDto" Title="Depth Chart" @ref="depthChart">

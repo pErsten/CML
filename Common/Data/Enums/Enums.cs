@@ -22,3 +22,10 @@ public enum EventTypeEnum
     WalletBalancesChanged = 2,
     BitcoinRateChanged = 3
 }
+
+public enum StockMarketSplitTypeEnum
+{
+    Unknown = 0,
+    FifteenMins = 1
+    //OneHour = 2
+}

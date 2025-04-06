@@ -42,9 +42,11 @@ namespace ApiServer
 
             var sqlConnectionStr = builder.Configuration.GetValue<string>("Databases:SqlConnection");
             services.AddDbContext<SqlContext>(options => options.UseSqlServer(sqlConnectionStr));
-            services.AddSingleton<JwtTokenGenerator>();
+
+            services.AddScoped<StockMarketService>();
             services.AddScoped<AuthService>();
             services.AddScoped<WalletService>();
+            services.AddSingleton<JwtTokenGenerator>();
             services.AddSingleton<BlazorSignalRService>();
             services.AddHttpContextAccessor();
 

@@ -35,6 +35,7 @@ namespace ApiServer.BackgroundWorkers
                 {
                     case (EventTypeEnum.BitcoinRateChanged, BitcoinExchange exchange):
                         await signalRService.SendBitcoinRateUpdate(signalRHub.Clients, exchange.BTCRate);
+                        await signalRService.SendBitcoinChartUpdate(signalRHub.Clients, StockMarketSplitTypeEnum.FifteenMins);
 
                         json = JsonSerializer.Serialize(exchange);
                         await dbContext.Events.AddAsync(new AppEvent(newEvent, json), stoppingToken);
