@@ -77,9 +77,9 @@ Open the Blazor client to test the UI and SignalR-based real-time updates.
 ### Screenshots:
 
 - Unanouthorized main screen:
-![image](https://github.com/user-attachments/assets/828d9491-6f51-46b5-987c-0b5551b33871)
+![image](https://github.com/user-attachments/assets/ce68be92-08c9-4db1-a3ea-d88bf75decc4)
 - Authorized main screen:
-![image](https://github.com/user-attachments/assets/db032926-17cc-4ca2-8858-885adb4a951c)
+![image](https://github.com/user-attachments/assets/230abd48-b130-450e-9eed-85d5664b63a7)
 - Login form:
 ![image](https://github.com/user-attachments/assets/bf095a6c-e467-4f97-9cbd-2f9e01b180c9)
 - Swagger:
