@@ -1,15 +1,13 @@
 ﻿@page "/"
 @using System.Globalization
-@using System.Net
 @using System.Net.Http.Headers
 @using Common
-@using Common.Data.Entities
 @using Common.Data.Enums
-@using Common.Dtos
-@using Microsoft.AspNetCore.Connections
-@using Microsoft.AspNetCore.Http.Connections.Client
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.IdentityModel.Tokens
+@using ApexCharts
+@using Common.Data.Dtos
+@using Common.Data.Entities
 @inject IConfiguration configuration
 @inject NavigationManager Navigation
 @inject IJSRuntime _jsRuntime;
@@ -19,7 +17,7 @@
     <MudCardContent Class="d-flex gap-4">
         <div class = "flex-initial">
             <MudText Typo="Typo.h4">BTC/EUR:
-                <MudText Inline="true" Typo="Typo.h4" Color="@(isUpTrend.HasValue ? (isUpTrend.Value ? Color.Success : Color.Error) : Color.Default)"><b>@btcRate</b></MudText>
+                <MudText Inline="true" Typo="Typo.h4" Color="@(isUpTrend.HasValue ? (isUpTrend.Value ? MudBlazor.Color.Success : MudBlazor.Color.Error) : MudBlazor.Color.Default)"><b>@btcRate</b></MudText>
             </MudText>
         </div>
     </MudCardContent>
@@ -27,7 +25,7 @@
 
 @if (!username.IsNullOrEmpty())
 {
-    <MudText Class="mt-2" Typo="Typo.h5" Align="Align.Center">Welcome back, @username!</MudText>
+    <MudText Class="mt-2" Typo="Typo.h5" Align="MudBlazor.Align.Center">Welcome back, @username!</MudText>
     <div class="d-flex gap-4">
         <MudCard>
             <MudCardContent Class="d-flex gap-4">
@@ -57,11 +55,16 @@ else
     <div>to see your balances you have to log in</div>
 }
 
-<div class="d-flex flex-row">
+<ApexChart TItem="BitcoinOrdersDto" Title="Depth Chart" @ref="depthChart">
+    <ApexPointSeries TItem="BitcoinOrdersDto" Name="Bids" Items="Bidss"
+    XValue="@(x => x.Price)" YValue="@(x => x.Amount)"
+    Color="#00C853" />
+    <ApexPointSeries TItem="BitcoinOrdersDto" Name="Asks" Items="Askss"
+    XValue="@(x => x.Price)" YValue="@(x => x.Amount)"
+    Color="#D50000" />
+</ApexChart>
 
-    <MudChart  ChartOptions="bidOptions" ChartType="ChartType.StackedBar" ChartSeries="@BidSeries" XAxisLabels="@BidLabels" Height="350px" />
-    <MudChart ChartOptions="askOptions" ChartType="ChartType.StackedBar" ChartSeries="@AskSeries" XAxisLabels="@AskLabels" Height="350px" />
-</div>
+
 @if (!username.IsNullOrEmpty())
 {
     <EditForm Model="@model" OnValidSubmit="OnBidCreate">
@@ -81,7 +84,7 @@ else
                         </MudSelect>
                     </MudCardContent>
                     <MudCardActions>
-                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Create Order</MudButton>
+                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Class="ml-auto">Create Order</MudButton>
                     </MudCardActions>
                 </MudCard>
             </MudItem>
@@ -92,10 +95,6 @@ else
 }
 @code {
     private HubConnection hubConnection;
-    public List<ChartSeries> BidSeries = new List<ChartSeries>();
-    public string[] BidLabels = new string[] { };
-    public List<ChartSeries> AskSeries = new List<ChartSeries>();
-    public string[] AskLabels = new string[] { };
     private string errorMsg;
     private string okMsg;
     private decimal fiatBalance;
@@ -103,11 +102,12 @@ else
     private decimal btcRate;
     private string username;
     private bool? isUpTrend;
-
     private CreateOrderRequest model = new CreateOrderRequest();
 
-    ChartOptions bidOptions = new() { ChartPalette = new string[] { "green" } };
-    ChartOptions askOptions = new() { ChartPalette = new string[] { "red" } };
+    private ApexChart<BitcoinOrdersDto> depthChart;
+
+    private List<BitcoinOrdersDto> Bidss = new();
+    private List<BitcoinOrdersDto> Askss = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -127,19 +127,12 @@ else
             .WithAutomaticReconnect()
             .Build();
 
-        hubConnection.On<List<BitcoinOrdersDto>, List<BitcoinOrdersDto>>("OrdersUpdate", (openBids, openAsks) =>
+        hubConnection.On<OrderBookSnapshotDto>("OrdersUpdate", async snapshot =>
         {
-            BidSeries = new List<ChartSeries>
-                {
-                    new ChartSeries { Name = "Bids", Data = openBids.Select(x => (double)x.Amount).Reverse().ToArray() }
-                };
-            BidLabels = openBids.Select(x => x.Price.ToString()).Reverse().ToArray();
-            AskSeries = new List<ChartSeries>
-                {
-                    new ChartSeries { Name = "Asks", Data = openAsks.Select(x => (double)x.Amount).ToArray() }
-                };
-            AskLabels = openAsks.Select(x => x.Price.ToString()).ToArray();
+            Bidss = snapshot.OpenBidsAgg;
+            Askss = snapshot.OpenAsksAgg;
             StateHasChanged();
+            await depthChart.UpdateSeriesAsync();
         });
 
         hubConnection.On<AccountWalletDto>("WalletUpdate", (wallet) =>
@@ -176,7 +169,7 @@ else
 
         StateHasChanged();
     }
-    
+
     private async Task OnBidCreate(EditContext context)
     {
         errorMsg = string.Empty;
@@ -197,6 +190,7 @@ else
             errorMsg = response.ReasonPhrase;
         }
 
+        model = new();
         StateHasChanged();
     }
 
