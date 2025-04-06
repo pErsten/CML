@@ -10,7 +10,7 @@
             <ApexChart TItem="BitcoinOrdersDto"
                        Title="Order Book"
                        @ref="depthChart"
-                       Height="360">
+                       Height="345">
                 <ApexPointSeries TItem="BitcoinOrdersDto"
                                  Name="Bids"
                                  Items="Bids"
@@ -27,13 +27,13 @@
         </MudItem>
         <MudItem xs="6" Style="height:400px">
             <MudTable T="OrderBookSnapshotSelectionTableDto"
-                      Items="@orderBookSnapshotSelectionTable"
-                      Hover="true"
-                      Breakpoint="Breakpoint.Sm"
-                      @ref="snapshotsTable"
-                      RowClass="cursor-pointer"
-                      OnRowClick="RowClickEvent"
-                      Height="360px">
+            Items="@orderBookSnapshotSelectionTable"
+            Hover="true"
+            Breakpoint="Breakpoint.Sm"
+            @ref="snapshotsTable"
+            RowClass="cursor-pointer"
+            OnRowClick="RowClickEvent"
+            Height="320px">
                 <HeaderContent>
                     <MudTh>Snapshot Date (UTC)</MudTh>
                 </HeaderContent>

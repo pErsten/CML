@@ -1,11 +1,7 @@
 ﻿@page "/"
-@using System.Globalization
-@using System.Net.Http.Headers
 @using Common
-@using Common.Data.Enums
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.IdentityModel.Tokens
-@using ApexCharts
 @using Common.Data.Models
 @using WebClient.Components
 @inject IConfiguration configuration
@@ -55,7 +51,7 @@ else
     <div>to see your balances you have to log in</div>
 }
 
-@if (hubConnection is not null)
+@if (!isLoading)
 {
     <BitcoinCandlestickGraph HubConnection="hubConnection">
 
@@ -63,34 +59,13 @@ else
     <DepthChart HubConnection="hubConnection">
 
     </DepthChart>
-        @if (!username.IsNullOrEmpty())
-        {
-            <EditForm Model="@model" OnValidSubmit="OnBidCreate">
-                <MudGrid Class="flex-grow-1">
-                    <MudItem xs="3" sm="7">
-                        <MudCard>
-                            <MudCardContent>
-                                <MudTextField Label="Amount" @bind-Value="model.Amount" For="@(() => model.Amount)" Format="F2" Culture="@CultureInfo.InvariantCulture"/>
-                            </MudCardContent>
-                            <MudCardContent>
-                                <MudTextField Label="Price" @bind-Value="model.Price" For="@(() => model.Price)" Format="F2" Culture="@CultureInfo.InvariantCulture"/>
-                            </MudCardContent>
-                            <MudCardContent>
-                                <MudSelect @bind-Value="model.Type" Label="Select order type" HelperText="String" Placeholder="Please Select">
-                                    <MudSelectItem Value="@OrderTypeEnum.Bid">Bid</MudSelectItem>
-                                    <MudSelectItem Value="@OrderTypeEnum.Ask">Ask</MudSelectItem>
-                                </MudSelect>
-                            </MudCardContent>
-                            <MudCardActions>
-                                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="MudBlazor.Color.Primary" Class="ml-auto">Create Order</MudButton>
-                            </MudCardActions>
-                        </MudCard>
-                    </MudItem>
-                </MudGrid>
-            </EditForm>
-            <span style="color: red">@errorMsg</span>
-            <span style="color: green">@okMsg</span>
-        }
+
+    @if (!username.IsNullOrEmpty())
+    {
+        <div class="mt-2">
+            <OrderCreationForm HubConnection="hubConnection"></OrderCreationForm>
+        </div>
+    }
 }
 
 
@@ -98,18 +73,17 @@ else
 
 @code {
     private HubConnection hubConnection;
-    private string errorMsg;
-    private string okMsg;
     private decimal fiatBalance;
     private decimal cryptoBalance;
     private decimal btcRate;
     private string username;
     private bool? isUpTrend;
-    private CreateOrderRequest model = new CreateOrderRequest();
+    private bool isLoading = true;
 
 
     protected override async Task OnInitializedAsync()
     {
+        isLoading = true;
         string serverUrl = configuration.GetValue<string>("ServerUrl"); 
         username = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "username");
 
@@ -157,30 +131,7 @@ else
             await hubConnection.InvokeAsync("ClientGetUserBalance");
         }
 
-        StateHasChanged();
-    }
-
-    private async Task OnBidCreate(EditContext context)
-    {
-        errorMsg = string.Empty;
-        okMsg = string.Empty;
-
-        string serverUrl = configuration.GetValue<string>("ServerUrl");
-        using var cli = new HttpClient();
-        var token = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
-        cli.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var response = await cli.PostAsJsonAsync($"{serverUrl}/orders/createOrder", model);
-        if (response.IsSuccessStatusCode)
-        {
-            var text = await response.Content.ReadAsStringAsync();
-            okMsg = text;
-        }
-        else
-        {
-            errorMsg = response.ReasonPhrase;
-        }
-
-        model = new();
+        isLoading = false;
         StateHasChanged();
     }
 
