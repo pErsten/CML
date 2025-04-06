@@ -7,6 +7,7 @@ using Common.Data.Dtos;
 using Common.Data.Entities;
 using Common.Data.Enums;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 
 namespace ApiServer.BackgroundWorkers
 {
@@ -34,13 +35,27 @@ namespace ApiServer.BackgroundWorkers
                 {
                     case (EventTypeEnum.BitcoinRateChanged, BitcoinExchange exchange):
                         await signalRService.SendBitcoinRateUpdate(signalRHub.Clients, exchange.BTCRate);
+
                         json = JsonSerializer.Serialize(exchange);
                         await dbContext.Events.AddAsync(new AppEvent(newEvent, json), stoppingToken);
                         await dbContext.SaveChangesAsync(stoppingToken);
                         break;
                     case (EventTypeEnum.OrderBookUpdated, OrderBookSnapshotDto snapshot):
                         await signalRService.SendOrdersUpdate(signalRHub.Clients, snapshot);
+
                         json = JsonSerializer.Serialize(new { snapshot.Id, snapshot.UtcCreated });
+                        await dbContext.Events.AddAsync(new AppEvent(newEvent, json), stoppingToken);
+                        await dbContext.SaveChangesAsync(stoppingToken);
+                        break;
+                    case (EventTypeEnum.WalletBalancesChanged, List<AccountWalletDto> wallets):
+                        var accIds = wallets.Select(x => x.AccountId).Distinct();
+                        var accountGuids = await dbContext.Accounts.Where(x => accIds.Contains(x.Id))
+                            .ToDictionaryAsync(x => x.Id, x => x.AccountId, stoppingToken);
+                        var tasks = wallets.Distinct().Select(x =>
+                            signalRService.SendWalletUpdate(signalRHub.Clients, accountGuids[x.AccountId], x));
+                        await Task.WhenAll(tasks);
+
+                        json = JsonSerializer.Serialize(wallets);
                         await dbContext.Events.AddAsync(new AppEvent(newEvent, json), stoppingToken);
                         await dbContext.SaveChangesAsync(stoppingToken);
                         break;

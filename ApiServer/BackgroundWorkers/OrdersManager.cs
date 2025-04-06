@@ -7,7 +7,6 @@ using Common.Data;
 using Common.Data.Dtos;
 using Common.Data.Entities;
 using Common.Data.Enums;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApiServer.BackgroundWorkers
@@ -109,7 +108,6 @@ namespace ApiServer.BackgroundWorkers
                     }
 
                     var dbContext = scope.ServiceProvider.GetService<SqlContext>();
-                    var hubService = scope.ServiceProvider.GetService<BlazorSignalRService>();
                     var isChanged = false;
                     while (highestBid is not null && smallestAsk is not null &&
                            highestBid.BtcPrice >= smallestAsk.BtcPrice)
@@ -194,15 +192,15 @@ namespace ApiServer.BackgroundWorkers
                         cryptoBidderWallet.Amount += btcAmount;
                         cryptoAskerWallet.Amount -= btcAmount;
                         fiatAskerWallet.Amount += btcAmount * btcPrice;
+                        updatedWalletsOfAccs.Add(fiatBidderWallet);
+                        updatedWalletsOfAccs.Add(fiatAskerWallet);
                         updatedWalletsOfAccs.Add(cryptoBidderWallet);
                         updatedWalletsOfAccs.Add(cryptoAskerWallet);
 
                         await dbContext.BitcoinOrderTransactions.AddAsync(trans, stoppingToken);
                         isChanged = true;
                     }
-
-                    var messagesHub = scope.ServiceProvider.GetService<IHubContext<BlazorSignalRHub>>();
-
+                    
                     var bidsAgg = openBids
                         .GroupBy(x => x.BtcPrice)
                         .Select(x => new BitcoinOrdersDto
@@ -235,14 +233,8 @@ namespace ApiServer.BackgroundWorkers
 
                     if (isChanged)
                     {
-                        var accIds = updatedWalletsOfAccs.Select(x => x.AccountId).Distinct();
-                        var accountGuids = await dbContext.Accounts.Where(x => accIds.Contains(x.Id))
-                            .ToDictionaryAsync(x => x.Id, x => x.AccountId, stoppingToken);
-                        var tasks = updatedWalletsOfAccs.Distinct().Select(x =>
-                            hubService.SendWalletUpdate(messagesHub.Clients, accountGuids[x.AccountId],
-                                new AccountWalletDto(x)));
-                        await Task.WhenAll(tasks);
-                        updatedWalletsOfAccs.Clear();
+                        await eventProceeder.WriteAsync(new EventDto(EventTypeEnum.WalletBalancesChanged, now, updatedWalletsOfAccs.Select(x => new AccountWalletDto(x)).ToList()));
+                        updatedWalletsOfAccs = new List<AccountWallet>();
                         dbContext.ChangeTracker.Clear();
                     }
                 }
