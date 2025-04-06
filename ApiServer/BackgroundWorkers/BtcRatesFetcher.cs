@@ -1,10 +1,9 @@
-﻿using ApiServer.Controllers;
-using ApiServer.Services;
+﻿using System.Threading.Channels;
 using Common;
 using Common.Data;
 using Common.Data.Dtos;
 using Common.Data.Entities;
-using Microsoft.AspNetCore.SignalR;
+using Common.Data.Enums;
 using Newtonsoft.Json.Linq;
 
 namespace ApiServer.BackgroundWorkers
@@ -16,7 +15,7 @@ namespace ApiServer.BackgroundWorkers
     public class BtcRatesFetcher : BackgroundService
     {
         private readonly IServiceScopeFactory scopeFactory;
-        private readonly BlazorSignalRService messageService;
+        private readonly ChannelWriter<EventDto> eventProceeder;
         private readonly IConfiguration configuration;
         private readonly string url;
         private decimal lastRate;
@@ -28,10 +27,10 @@ namespace ApiServer.BackgroundWorkers
         /// <param name="scopeFactory">Factory for creating service scopes for dependency resolution.</param>
         /// <param name="messageService">SignalR messaging service for broadcasting rate updates.</param>
         /// <param name="configuration">Application configuration object used to read API endpoint.</param>
-        public BtcRatesFetcher(IServiceScopeFactory scopeFactory, BlazorSignalRService messageService, IConfiguration configuration)
+        public BtcRatesFetcher(IServiceScopeFactory scopeFactory, ChannelWriter<EventDto> eventProceeder, IConfiguration configuration)
         {
             this.scopeFactory = scopeFactory;
-            this.messageService = messageService;
+            this.eventProceeder = eventProceeder;
             this.configuration = configuration;
             url = configuration.GetValue<string>("BtcRatesApi");
         }
@@ -79,15 +78,15 @@ namespace ApiServer.BackgroundWorkers
                 throw new Exception("Failed to fetch BTC rates");
             }
             
-            var json = JObject.Parse(await response.Content.ReadAsStringAsync());
-            var dto = json.GetValue("USD").ToObject<BtcRatesFetcherResponse>();
+            var json = JObject.Parse(await response.Content.ReadAsStringAsync(stoppingToken));
+            var dto = json.GetValue(Constants.FiatCurrency).ToObject<BtcRatesFetcherResponse>();
 
             if (lastRate != dto.fifteenMin)
             {
-                var messageHub = scope.ServiceProvider.GetService<IHubContext<BlazorSignalRHub>>();
-                messageService.SendBitcoinRateUpdate(messageHub.Clients, dto.fifteenMin);
-                await dbContext.BitcoinExchanges.AddAsync(new BitcoinExchange(dto.fifteenMin));
-                await dbContext.SaveChangesAsync();
+                var bitcoinExchange = new BitcoinExchange(dto.fifteenMin);
+                await dbContext.BitcoinExchanges.AddAsync(bitcoinExchange, stoppingToken);
+                await dbContext.SaveChangesAsync(stoppingToken);
+                await eventProceeder.WriteAsync(new EventDto(EventTypeEnum.BitcoinRateChanged, DateTime.UtcNow, bitcoinExchange), stoppingToken);
                 lastRate = dto.fifteenMin;
             }
         }

@@ -1,4 +1,5 @@
-﻿using System.Threading.Channels;
+﻿using System.Text.Json;
+using System.Threading.Channels;
 using ApiServer.Controllers;
 using ApiServer.Services;
 using Common.Data;
@@ -32,6 +33,12 @@ namespace ApiServer.BackgroundWorkers
                 {
                     case (EventTypeEnum.BitcoinRateChanged, BitcoinExchange exchange):
                         await signalRService.SendBitcoinRateUpdate(signalRHub.Clients, exchange.BTCRate);
+                        var json = JsonSerializer.Serialize(exchange);
+                        await dbContext.Events.AddAsync(new AppEvent(newEvent.UtcCreated, json), stoppingToken);
+                        await dbContext.SaveChangesAsync(stoppingToken);
+                        break;
+                    case (EventTypeEnum.OrderBookUpdated, _):
+                        // TODO: add stuff
                         break;
                 }
             }
