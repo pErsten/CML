@@ -27,13 +27,14 @@
         </MudItem>
         <MudItem xs="6" Style="height:400px">
             <MudTable T="OrderBookSnapshotSelectionTableDto"
-            Items="@orderBookSnapshotSelectionTable"
-            Hover="true"
-            Breakpoint="Breakpoint.Sm"
-            @ref="snapshotsTable"
-            RowClass="cursor-pointer"
-            OnRowClick="RowClickEvent"
-            Height="320px">
+                      Items="@orderBookSnapshotSelectionTable"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm"
+                      @ref="snapshotsTable"
+                      RowClass="cursor-pointer"
+                      OnRowClick="RowClickEvent"
+                      FixedHeader="true"
+                      Height="320px">
                 <HeaderContent>
                     <MudTh>Snapshot Date (UTC)</MudTh>
                 </HeaderContent>
