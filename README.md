@@ -80,6 +80,8 @@ Open the Blazor client to test the UI and SignalR-based real-time updates.
 ![image](https://github.com/user-attachments/assets/ce68be92-08c9-4db1-a3ea-d88bf75decc4)
 - Authorized main screen:
 ![image](https://github.com/user-attachments/assets/230abd48-b130-450e-9eed-85d5664b63a7)
+- Selecting order book snapshot from list:
+![image](https://github.com/user-attachments/assets/393d74ef-f9a2-422c-992b-f878c6cf15db)
 - Login form:
 ![image](https://github.com/user-attachments/assets/bf095a6c-e467-4f97-9cbd-2f9e01b180c9)
 - Swagger:
