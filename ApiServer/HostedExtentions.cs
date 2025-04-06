@@ -79,16 +79,6 @@ namespace ApiServer
                                 context.Token = accessToken;
                             }
                             return Task.CompletedTask;
-                        },
-                        OnTokenValidated = context =>
-                        {
-                            Console.WriteLine($"[DEBUG] Token validated for: {context.Principal.Identity.Name}");
-                            return Task.CompletedTask;
-                        },
-                        OnAuthenticationFailed = context =>
-                        {
-                            Console.WriteLine($"[ERROR] Token authentication failed: {context.Exception.Message}");
-                            return Task.CompletedTask;
                         }
                     };
                 });

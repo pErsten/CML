@@ -125,6 +125,8 @@ public class BlazorSignalRService
         using var scope = scopeFactory.CreateScope();
         var stockMarketService = scope.ServiceProvider.GetService<StockMarketService>();
         var chartData = await stockMarketService.GetBitcoinStockPrices(splitType);
+        if (chartData is null)
+            return;
 
         await clients.Client(connectionId).SendAsync("BitcoinChartUpdate", chartData);
     }
@@ -134,6 +136,8 @@ public class BlazorSignalRService
         using var scope = scopeFactory.CreateScope();
         var stockMarketService = scope.ServiceProvider.GetService<StockMarketService>();
         var chartData = await stockMarketService.GetBitcoinStockPrices(splitType);
+        if (chartData is null)
+            return;
 
         await clients.All.SendAsync("BitcoinChartUpdate", chartData);
     }

@@ -23,6 +23,7 @@ namespace ApiServer.BackgroundWorkers
         private readonly ChannelReader<BitcoinOrder> channelReader;
         private readonly ChannelWriter<EventDto> eventProceeder;
         private readonly IServiceScopeFactory scopeFactory;
+        private readonly ILogger<OrdersManager> logger;
         private List<BitcoinOrder> openBids;
         private List<BitcoinOrder> openAsks;
         private Dictionary<int, AccountWallet> fiatWallets;
@@ -36,8 +37,9 @@ namespace ApiServer.BackgroundWorkers
         /// </summary>
         /// <param name="channelReader">The channel reader used to receive new Bitcoin orders.</param>
         /// <param name="scopeFactory">Factory for creating service scopes for dependency resolution of scoped and transient services.</param>
-        public OrdersManager(ChannelReader<BitcoinOrder> channelReader, ChannelWriter<EventDto> eventProceeder, IServiceScopeFactory scopeFactory)
+        public OrdersManager(ILoggerFactory loggerFactory, ChannelReader<BitcoinOrder> channelReader, ChannelWriter<EventDto> eventProceeder, IServiceScopeFactory scopeFactory)
         {
+            logger = loggerFactory.CreateLogger<OrdersManager>();
             this.channelReader = channelReader;
             this.eventProceeder = eventProceeder;
             this.scopeFactory = scopeFactory;
@@ -74,7 +76,7 @@ namespace ApiServer.BackgroundWorkers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] OrdersManager initialization err: {ex}");
+                logger.LogError("OrdersManager initialization ex: {exception}", ex);
             }
 
             await foreach (var order in channelReader.ReadAllAsync(stoppingToken))
@@ -103,7 +105,7 @@ namespace ApiServer.BackgroundWorkers
 
                             break;
                         default:
-                            // TODO: add logger
+                            logger.LogError("OrdersManager iteration on order {orderId}. Unexpected order type: {orderType}", order.Id, order.Type);
                             continue;
                     }
 
@@ -233,14 +235,14 @@ namespace ApiServer.BackgroundWorkers
 
                     if (isChanged)
                     {
-                        await eventProceeder.WriteAsync(new EventDto(EventTypeEnum.WalletBalancesChanged, now, updatedWalletsOfAccs.Select(x => new AccountWalletDto(x)).ToList()));
+                        await eventProceeder.WriteAsync(new EventDto(EventTypeEnum.WalletBalancesChanged, now, updatedWalletsOfAccs.Select(x => new AccountWalletDto(x)).ToList()), stoppingToken);
                         updatedWalletsOfAccs = new List<AccountWallet>();
                         dbContext.ChangeTracker.Clear();
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[ERROR] OrdersManager iteration on order {order.Id} err: {ex}");
+                    logger.LogError("OrdersManager iteration on order {orderId} ex: {exception}", order.Id, ex);
                 }
             }
         }

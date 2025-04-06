@@ -12,13 +12,15 @@ namespace ApiServer.Services
     /// </summary>
     public class AuthService
     {
+        private ILogger<AuthService> logger;
         private readonly SqlContext dbContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AuthService"/> class.
         /// </summary>
-        public AuthService(SqlContext dbContext)
+        public AuthService(ILoggerFactory loggerFactory, SqlContext dbContext)
         {
+            logger = loggerFactory.CreateLogger<AuthService>();
             this.dbContext = dbContext;
         }
 
@@ -46,11 +48,8 @@ namespace ApiServer.Services
             var account = await GetExistingUser(login);
             if (account is not null)
             {
-                // TODO: add logger
-                //logger.LogError("User already exists")
-                if (account.PasswordHash != passwordHash)
-                    return null;
-                return account;
+                logger.LogWarning("Tried to register already existing user: {userGuid}", account.AccountId);
+                return account.PasswordHash != passwordHash! ? null! : account;
             }
 
             account = new Account(passwordHash, login);
@@ -72,15 +71,13 @@ namespace ApiServer.Services
             var account = await GetExistingUser(login);
             if (account is null)
             {
-                // TODO: add logger
-                //logger.LogError("User doesn't exist")
+                logger.LogWarning("User doesn't exist, login: {login}", login);
                 return null;
             }
 
             if (passwordHash != account.PasswordHash)
             {
-                // TODO: add logger
-                //logger.LogError("Wrong password")
+                logger.LogInformation("Wrong password, login: {login}", login);
                 return null;
             }
 

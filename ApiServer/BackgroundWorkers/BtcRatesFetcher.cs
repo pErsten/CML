@@ -14,6 +14,7 @@ namespace ApiServer.BackgroundWorkers
     /// </summary>
     public class BtcRatesFetcher : BackgroundService
     {
+        private readonly ILogger<BtcRatesFetcher> logger;
         private readonly IServiceScopeFactory scopeFactory;
         private readonly ChannelWriter<EventDto> eventProceeder;
         private readonly IConfiguration configuration;
@@ -27,8 +28,9 @@ namespace ApiServer.BackgroundWorkers
         /// <param name="scopeFactory">Factory for creating service scopes for dependency resolution.</param>
         /// <param name="messageService">SignalR messaging service for broadcasting rate updates.</param>
         /// <param name="configuration">Application configuration object used to read API endpoint.</param>
-        public BtcRatesFetcher(IServiceScopeFactory scopeFactory, ChannelWriter<EventDto> eventProceeder, IConfiguration configuration)
+        public BtcRatesFetcher(ILoggerFactory loggerFactory, IServiceScopeFactory scopeFactory, ChannelWriter<EventDto> eventProceeder, IConfiguration configuration)
         {
+            logger = loggerFactory.CreateLogger<BtcRatesFetcher>();
             this.scopeFactory = scopeFactory;
             this.eventProceeder = eventProceeder;
             this.configuration = configuration;
@@ -56,8 +58,7 @@ namespace ApiServer.BackgroundWorkers
             }
             catch (Exception ex)
             {
-                // TODO: add logs
-                //throw new Exception($"BtcRatesFetcher ex: {ex.Message}");
+                logger.LogError("BtcRatesFetcher ex: {exception}", ex);
             }
         }
 
@@ -72,13 +73,13 @@ namespace ApiServer.BackgroundWorkers
             using var cli = new HttpClient();
 
             var response = await cli.GetAsync(url, stoppingToken);
+            var text = await response.Content.ReadAsStringAsync(stoppingToken);
             if (!response.IsSuccessStatusCode)
             {
-                // TODO: add logs
-                throw new Exception("Failed to fetch BTC rates");
+                logger.LogError("Failed to fetch BTC rates, msg: {errorMessage}", text);
             }
             
-            var json = JObject.Parse(await response.Content.ReadAsStringAsync(stoppingToken));
+            var json = JObject.Parse(text);
             var dto = json.GetValue(Constants.FiatCurrency).ToObject<BtcRatesFetcherResponse>();
 
             if (lastRate != dto.fifteenMin)
