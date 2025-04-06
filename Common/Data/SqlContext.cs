@@ -15,6 +15,7 @@ namespace Common.Data
         public DbSet<BitcoinOrder> BitcoinOrders { get; set; }
         public DbSet<BitcoinOrderTransaction> BitcoinOrderTransactions { get; set; }
         public DbSet<AppEvent> Events { get; set; }
+        public DbSet<OrderBookSnapshot> OrderBookSnapshots { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder mb)

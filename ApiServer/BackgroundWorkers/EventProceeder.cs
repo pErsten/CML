@@ -29,16 +29,20 @@ namespace ApiServer.BackgroundWorkers
                 var scope = scopeFactory.CreateScope();
                 var dbContext = scope.ServiceProvider.GetService<SqlContext>();
                 var signalRHub = scope.ServiceProvider.GetService<IHubContext<BlazorSignalRHub>>();
+                string json = string.Empty;
                 switch (newEvent.EventType, newEvent.EventBody)
                 {
                     case (EventTypeEnum.BitcoinRateChanged, BitcoinExchange exchange):
                         await signalRService.SendBitcoinRateUpdate(signalRHub.Clients, exchange.BTCRate);
-                        var json = JsonSerializer.Serialize(exchange);
-                        await dbContext.Events.AddAsync(new AppEvent(newEvent.UtcCreated, json), stoppingToken);
+                        json = JsonSerializer.Serialize(exchange);
+                        await dbContext.Events.AddAsync(new AppEvent(newEvent, json), stoppingToken);
                         await dbContext.SaveChangesAsync(stoppingToken);
                         break;
-                    case (EventTypeEnum.OrderBookUpdated, _):
-                        // TODO: add stuff
+                    case (EventTypeEnum.OrderBookUpdated, OrderBookSnapshotDto snapshot):
+                        await signalRService.SendOrdersUpdate(signalRHub.Clients, snapshot);
+                        json = JsonSerializer.Serialize(new { snapshot.Id, snapshot.UtcCreated });
+                        await dbContext.Events.AddAsync(new AppEvent(newEvent, json), stoppingToken);
+                        await dbContext.SaveChangesAsync(stoppingToken);
                         break;
                 }
             }

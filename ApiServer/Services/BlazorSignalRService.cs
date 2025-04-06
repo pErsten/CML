@@ -1,4 +1,5 @@
-﻿using Common;
+﻿using System.Text.Json;
+using Common;
 using Common.Data.Enums;
 using Common.Data;
 using Microsoft.AspNetCore.SignalR;
@@ -55,9 +56,9 @@ public class BlazorSignalRService
     /// <param name="clients">The SignalR clients proxy.</param>
     /// <param name="bidsAgg">List of aggregated bid orders.</param>
     /// <param name="asksAgg">List of aggregated ask orders.</param>
-    public async Task SendOrdersUpdate(IHubClients clients, List<BitcoinOrdersDto> bidsAgg, List<BitcoinOrdersDto> asksAgg)
+    public async Task SendOrdersUpdate(IHubClients clients, OrderBookSnapshotDto snapshot)
     {
-        await clients.All.SendAsync("OrdersUpdate", bidsAgg, asksAgg);
+        await clients.All.SendAsync("OrdersUpdate", snapshot);
     }
 
     /// <summary>
@@ -98,25 +99,23 @@ public class BlazorSignalRService
     {
         using var scope = scopeFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetService<SqlContext>();
-        var bidsAgg = await dbContext.BitcoinOrders
-            .Where(x => x.Status == OrderStatusEnum.Open && x.Type == OrderTypeEnum.Bid)
-            .GroupBy(x => x.BtcPrice)
-            .Select(x => new BitcoinOrdersDto
-            {
-                Price = x.Key,
-                Amount = x.Sum(y => y.BtcRemained)
-            }).OrderByDescending(x => x.Price).Take(Constants.OrdersShown).ToListAsync();
-        var asksAgg = await dbContext.BitcoinOrders
-            .Where(x => x.Status == OrderStatusEnum.Open && x.Type == OrderTypeEnum.Ask)
-            .GroupBy(x => x.BtcPrice)
-            .Select(x => new BitcoinOrdersDto
-            {
-                Price = x.Key,
-                Amount = x.Sum(y => y.BtcRemained)
-            }).OrderBy(x => x.Price).Take(Constants.OrdersShown).ToListAsync();
-
-
-        await clients.Client(connectionId).SendAsync("OrdersUpdate", bidsAgg, asksAgg);
+        var snapshot = await dbContext.OrderBookSnapshots.OrderByDescending(x => x.Id).AsNoTracking().FirstOrDefaultAsync();
+        if (snapshot is null)
+            return;
+        var bidsAgg = JsonSerializer.Deserialize<List<BitcoinOrdersDto>>(snapshot.BidsJson)!;
+        var asksAgg = JsonSerializer.Deserialize<List<BitcoinOrdersDto>>(snapshot.AsksJson)!;
+        if (bidsAgg.Count > Constants.OrdersShown)
+            bidsAgg = bidsAgg[^Constants.OrdersShown..];
+        if (asksAgg.Count > Constants.OrdersShown)
+            asksAgg = asksAgg[^Constants.OrdersShown..];
+        
+        await clients.Client(connectionId).SendAsync("OrdersUpdate", new OrderBookSnapshotDto
+        {
+            Id = snapshot.Id,
+            OpenAsksAgg = asksAgg,
+            OpenBidsAgg = bidsAgg,
+            UtcCreated = snapshot.UtcCreated
+        });
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
-﻿using System.Threading.Channels;
+﻿using System.Text.Json;
+using System.Threading.Channels;
 using ApiServer.Controllers;
 using ApiServer.Services;
 using Common;
@@ -21,6 +22,7 @@ namespace ApiServer.BackgroundWorkers
     public class OrdersManager: BackgroundService
     {
         private readonly ChannelReader<BitcoinOrder> channelReader;
+        private readonly ChannelWriter<EventDto> eventProceeder;
         private readonly IServiceScopeFactory scopeFactory;
         private List<BitcoinOrder> openBids;
         private List<BitcoinOrder> openAsks;
@@ -35,9 +37,10 @@ namespace ApiServer.BackgroundWorkers
         /// </summary>
         /// <param name="channelReader">The channel reader used to receive new Bitcoin orders.</param>
         /// <param name="scopeFactory">Factory for creating service scopes for dependency resolution of scoped and transient services.</param>
-        public OrdersManager(ChannelReader<BitcoinOrder> channelReader, IServiceScopeFactory scopeFactory)
+        public OrdersManager(ChannelReader<BitcoinOrder> channelReader, ChannelWriter<EventDto> eventProceeder, IServiceScopeFactory scopeFactory)
         {
             this.channelReader = channelReader;
+            this.eventProceeder = eventProceeder;
             this.scopeFactory = scopeFactory;
         }
 
@@ -50,28 +53,25 @@ namespace ApiServer.BackgroundWorkers
             var updatedWalletsOfAccs = new List<AccountWallet>();
             try
             {
-                using (var scope = scopeFactory.CreateScope())
-                {
-                    await using (var dbContext = scope.ServiceProvider.GetService<SqlContext>())
-                    {
-                        var openOrders = await dbContext.BitcoinOrders.Where(x => x.Status == OrderStatusEnum.Open).AsNoTracking().ToListAsync(stoppingToken);
-                        openBids = openOrders.Where(x => x.Type == OrderTypeEnum.Bid).OrderBy(x => x.BtcPrice).ToList(); // Highest price in the end to manipulate easier
-                        openAsks = openOrders.Where(x => x.Type == OrderTypeEnum.Ask).OrderByDescending(x => x.BtcPrice).ToList(); // Lowest price in the end
-                        highestBid = openBids.LastOrDefault();
-                        smallestAsk = openAsks.LastOrDefault();
-                        var bidAccs = openBids.Select(x => x.AccountId).Distinct();
-                        var askAccs = openAsks.Select(x => x.AccountId).Distinct();
-                        fiatWallets = await dbContext.AccountWallets
-                            .Where(x => x.Currency == Constants.FiatCurrency && bidAccs.Contains(x.AccountId))
-                            .AsNoTracking()
-                            .ToDictionaryAsync(x => x.AccountId, stoppingToken);
-                        cryptoWallets = await dbContext.AccountWallets
-                            .Where(x => x.Currency == Constants.CryptoCurrency && askAccs.Contains(x.AccountId))
-                            .AsNoTracking()
-                            .ToDictionaryAsync(x => x.AccountId, stoppingToken);
-                        dbContext.ChangeTracker.Clear();
-                    }
-                }
+                using var scope = scopeFactory.CreateScope();
+                await using var dbContext = scope.ServiceProvider.GetService<SqlContext>();
+
+                var openOrders = await dbContext.BitcoinOrders.Where(x => x.Status == OrderStatusEnum.Open).AsNoTracking().ToListAsync(stoppingToken);
+                openBids = openOrders.Where(x => x.Type == OrderTypeEnum.Bid).OrderBy(x => x.BtcPrice).ToList(); // Highest price in the end to manipulate easier
+                openAsks = openOrders.Where(x => x.Type == OrderTypeEnum.Ask).OrderByDescending(x => x.BtcPrice).ToList(); // Lowest price in the end
+                highestBid = openBids.LastOrDefault();
+                smallestAsk = openAsks.LastOrDefault();
+                var bidAccs = openBids.Select(x => x.AccountId).Distinct();
+                var askAccs = openAsks.Select(x => x.AccountId).Distinct();
+                fiatWallets = await dbContext.AccountWallets
+                    .Where(x => x.Currency == Constants.FiatCurrency && bidAccs.Contains(x.AccountId))
+                    .AsNoTracking()
+                    .ToDictionaryAsync(x => x.AccountId, stoppingToken);
+                cryptoWallets = await dbContext.AccountWallets
+                    .Where(x => x.Currency == Constants.CryptoCurrency && askAccs.Contains(x.AccountId))
+                    .AsNoTracking()
+                    .ToDictionaryAsync(x => x.AccountId, stoppingToken);
+                dbContext.ChangeTracker.Clear();
             }
             catch (Exception ex)
             {
@@ -82,6 +82,7 @@ namespace ApiServer.BackgroundWorkers
             {
                 try
                 {
+                    var now = DateTime.UtcNow;
                     order.Account = null;
                     using var scope = scopeFactory.CreateScope();
                     switch (order.Type)
@@ -127,7 +128,7 @@ namespace ApiServer.BackgroundWorkers
                                 userBid.Status = userBid.BtcAmount > userBid.BtcRemained
                                     ? OrderStatusEnum.PartiallyCancelled
                                     : OrderStatusEnum.Cancelled;
-                                userBid.UtcUpdated = DateTime.UtcNow;
+                                userBid.UtcUpdated = now;
                                 openBids.Remove(userBid);
                             }
 
@@ -147,7 +148,7 @@ namespace ApiServer.BackgroundWorkers
                                 userAsk.Status = userAsk.BtcAmount > userAsk.BtcRemained
                                     ? OrderStatusEnum.PartiallyCancelled
                                     : OrderStatusEnum.Cancelled;
-                                userAsk.UtcUpdated = DateTime.UtcNow;
+                                userAsk.UtcUpdated = now;
                                 openAsks.Remove(userAsk);
                             }
 
@@ -160,8 +161,8 @@ namespace ApiServer.BackgroundWorkers
                         var btcPrice = highestBid.BtcPrice;
                         highestBid.BtcRemained -= btcAmount;
                         smallestAsk.BtcRemained -= btcAmount;
-                        highestBid.UtcUpdated = DateTime.UtcNow;
-                        smallestAsk.UtcUpdated = DateTime.UtcNow;
+                        highestBid.UtcUpdated = now;
+                        smallestAsk.UtcUpdated = now;
                         var trans = new BitcoinOrderTransaction(highestBid.Id, smallestAsk.Id, btcAmount, btcPrice);
                         if (highestBid.BtcRemained <= 0)
                         {
@@ -202,15 +203,38 @@ namespace ApiServer.BackgroundWorkers
 
                     var messagesHub = scope.ServiceProvider.GetService<IHubContext<BlazorSignalRHub>>();
 
-                    var bidsAgg = AggregateOrders(Constants.OrdersShown, openBids);
-                    var asksAgg = AggregateOrders(Constants.OrdersShown, openAsks);
+                    var bidsAgg = openBids
+                        .GroupBy(x => x.BtcPrice)
+                        .Select(x => new BitcoinOrdersDto
+                        {
+                            Price = x.Key,
+                            Amount = x.Sum(y => y.BtcRemained)
+                        }).ToList();
+                    var asksAgg = openAsks
+                        .GroupBy(x => x.BtcPrice)
+                        .Select(x => new BitcoinOrdersDto
+                        {
+                            Price = x.Key,
+                            Amount = x.Sum(y => y.BtcRemained)
+                        }).ToList();
 
-                    await hubService.SendOrdersUpdate(messagesHub.Clients, bidsAgg, asksAgg);
+                    var openAsksJson = JsonSerializer.Serialize(asksAgg);
+                    var openBidsJson = JsonSerializer.Serialize(bidsAgg);
+                    var orderBookSnapshot = new OrderBookSnapshot(now, openAsksJson, openBidsJson);
+
+                    await dbContext.OrderBookSnapshots.AddAsync(orderBookSnapshot, stoppingToken);
+                    await dbContext.SaveChangesAsync(stoppingToken);
+
+                    await eventProceeder.WriteAsync(new EventDto(EventTypeEnum.OrderBookUpdated, now, new OrderBookSnapshotDto
+                    {
+                        Id = orderBookSnapshot.Id,
+                        OpenAsksAgg = asksAgg[^Constants.OrdersShown..],
+                        OpenBidsAgg = bidsAgg[^Constants.OrdersShown..],
+                        UtcCreated = now
+                    }), stoppingToken);
 
                     if (isChanged)
                     {
-                        await dbContext.SaveChangesAsync(stoppingToken);
-
                         var accIds = updatedWalletsOfAccs.Select(x => x.AccountId).Distinct();
                         var accountGuids = await dbContext.Accounts.Where(x => accIds.Contains(x.Id))
                             .ToDictionaryAsync(x => x.Id, x => x.AccountId, stoppingToken);
@@ -228,39 +252,7 @@ namespace ApiServer.BackgroundWorkers
                 }
             }
         }
-
-        /// <summary>
-        /// Aggregates the top N open orders by bitcoin price level, grouping remaining amounts for display or broadcasting.
-        /// </summary>
-        /// <param name="listSize">The maximum number of price levels to aggregate.</param>
-        /// <param name="openOrders">The list of open orders to aggregate (bids or asks).</param>
-        /// <returns>A list of aggregated order DTOs.</returns>
-        private List<BitcoinOrdersDto> AggregateOrders(int listSize, List<BitcoinOrder> openOrders)
-        {
-            var ordersAgg = Enumerable
-                .Range(0, Constants.OrdersShown)
-                .Select(x => new BitcoinOrdersDto())
-                .ToList();
-
-            for (int i = 0, j = openOrders.Count - 1; j >= 0; j--)
-            {
-                if (ordersAgg[i].Price != 0 && ordersAgg[i].Price != openOrders[j].BtcPrice)
-                {
-                    i++;
-                    if (i >= listSize)
-                    {
-                        break;
-                    }
-                }
-
-                ordersAgg[i].Price = openOrders[j].BtcPrice;
-                ordersAgg[i].Amount += openOrders[j].BtcRemained;
-            }
-
-            return ordersAgg;
-        }
-
-
+        
         private Comparer<BitcoinOrder> bidComparer =
             Comparer<BitcoinOrder>.Create((x, y) => Math.Sign(x.BtcPrice - y.BtcPrice));
         private Comparer<BitcoinOrder> askComparer =
