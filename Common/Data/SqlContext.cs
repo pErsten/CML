@@ -11,7 +11,6 @@ namespace Common.Data
         }
         public DbSet<BitcoinExchange> BitcoinExchanges { get; set; }
         public DbSet<Account> Accounts { get; set; }
-        public DbSet<AccountWallet> AccountWallets { get; set; }
         public DbSet<AppEvent> Events { get; set; }
         public DbSet<OrderBookSnapshot> OrderBookSnapshots { get; set; }
 
@@ -25,8 +24,6 @@ namespace Common.Data
             mb.Entity<Account>().Property(x => x.AccountId).HasMaxLength(50);
             mb.Entity<Account>().HasIndex(x => x.Login).IsUnique();
             mb.Entity<Account>().HasIndex(x => x.AccountId).IsUnique();
-
-            mb.Entity<AccountWallet>().HasIndex(x => new { x.AccountId, x.Currency }).IsUnique();
 
             base.OnModelCreating(mb);
         }

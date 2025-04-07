@@ -28,7 +28,7 @@ public enum OrderStatusEnum
 public enum EventTypeEnum
 {
     OrderBookUpdated = 1,
-    WalletBalancesChanged = 2,
+    [Obsolete]WalletBalancesChanged = 2,
     BitcoinRateChanged = 3
 }
 

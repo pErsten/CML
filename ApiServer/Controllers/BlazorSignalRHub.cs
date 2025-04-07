@@ -22,33 +22,6 @@ namespace ApiServer.Controllers
         }
 
         /// <summary>
-        /// Allows an authenticated client to subscribe to real-time wallet updates.
-        /// Associates the client's SignalR connection ID with their account.
-        /// </summary>
-        public async Task SubscribeToWalletUpdates()
-        {
-            if (!Context.User.Identity.IsAuthenticated)
-            {
-                return;
-            }
-            var accountGuid = Context.User.Identity.Name;
-            await service.SubscribeToWalletUpdates(accountGuid, Context.ConnectionId);
-        }
-
-        /// <summary>
-        /// Sends the current wallet balances (fiat and crypto) to the authenticated client.
-        /// </summary>
-        public async Task ClientGetUserBalance()
-        {
-            if (!Context.User.Identity.IsAuthenticated)
-            {
-                return;
-            }
-            var accountGuid = Context.User.Identity.Name;
-            await service.ClientGetUserBalance(Clients, Context.ConnectionId, accountGuid);
-        }
-
-        /// <summary>
         /// Sends the current Bitcoin exchange rate to the client.
         /// </summary>
         public async Task ClientGetBitcoinRate()

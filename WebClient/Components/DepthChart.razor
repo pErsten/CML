@@ -5,7 +5,7 @@
 
 <MudCard>
     <MudGrid>
-        <MudItem xs="6" Style="height:400px">
+        <MudItem xs="8" Style="height:400px">
             <MudText Typo="Typo.h6" Color="Color.Warning">@(OldSnapshotId is null ? "" : "warning: you're reviewing selected snapshot, it'll not update in real time")</MudText>
             <ApexChart TItem="BitcoinOrdersDto"
             Title="Order Book"
@@ -25,7 +25,7 @@
                 Color="#D50000"/>
             </ApexChart>
         </MudItem>
-        <MudItem xs="6" Style="height:400px">
+        <MudItem xs="4" Style="height:400px">
             <MudTable T="OrderBookSnapshotSelectionTableDto"
             Items="@orderBookSnapshotSelectionTable"
             Hover="true"

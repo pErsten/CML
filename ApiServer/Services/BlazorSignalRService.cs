@@ -23,33 +23,7 @@ public class BlazorSignalRService
     {
         this.scopeFactory = scopeFactory;
     }
-
-    private Dictionary<string, string> _subscriptions = new Dictionary<string, string>();
-
-    /// <summary>
-    /// Subscribes a client to wallet updates by linking the user's account ID to their SignalR connection ID.
-    /// </summary>
-    /// <param name="accountGuid">The user's account GUID.</param>
-    /// <param name="connectionId">The SignalR connection ID.</param>
-    public async Task SubscribeToWalletUpdates(string accountGuid, string connectionId)
-    {
-        _subscriptions[accountGuid] = connectionId;
-    }
-
-    /// <summary>
-    /// Sends a wallet update to a specific client based on their account ID.
-    /// </summary>
-    /// <param name="clients">The SignalR clients proxy.</param>
-    /// <param name="accountGuid">The user's account GUID.</param>
-    /// <param name="wallet">The wallet data to send.</param>
-    public async Task SendWalletUpdate(IHubClients clients, string accountGuid, AccountWalletDto wallet)
-    {
-        if (_subscriptions.TryGetValue(accountGuid, out var connectionId))
-        {
-            await clients.Client(connectionId).SendAsync("WalletUpdate", wallet);
-        }
-    }
-
+    
     /// <summary>
     /// Broadcasts aggregated order book updates (bids and asks) to all connected clients.
     /// </summary>
@@ -69,25 +43,6 @@ public class BlazorSignalRService
     public async Task SendBitcoinRateUpdate(IHubClients clients, decimal newRate)
     {
         await clients.All.SendAsync("BtcRateUpdate", newRate);
-    }
-
-    /// <summary>
-    /// Fetches the user's wallet balances (crypto and fiat) and sends them to the specified client.
-    /// </summary>
-    /// <param name="clients">The SignalR caller clients proxy.</param>
-    /// <param name="connectionId">The SignalR connection ID of the requesting client.</param>
-    /// <param name="accountGuid">The user's account GUID.</param>
-    public async Task ClientGetUserBalance(IHubCallerClients clients, string connectionId, string accountGuid)
-    {
-        using var scope = scopeFactory.CreateScope();
-        var dbContext = scope.ServiceProvider.GetService<SqlContext>();
-        var accountId = await dbContext.Accounts.Where(x => x.AccountId == accountGuid).Select(x => x.Id).FirstAsync();
-
-        var cryptoWallet = await WalletService.GetOrCreateWallet(dbContext, accountId, Constants.CryptoCurrency);
-        var fiatWallet = await WalletService.GetOrCreateWallet(dbContext, accountId, Constants.FiatCurrency);
-
-        await clients.Client(connectionId).SendAsync("WalletUpdate", new AccountWalletDto(cryptoWallet));
-        await clients.Client(connectionId).SendAsync("WalletUpdate", new AccountWalletDto(fiatWallet));
     }
 
     /// <summary>

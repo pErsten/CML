@@ -63,18 +63,6 @@ namespace ApiServer.BackgroundWorkers
                             await dbContext.Events.AddAsync(new AppEvent(newEvent, json), stoppingToken);
                             await dbContext.SaveChangesAsync(stoppingToken);
                             break;
-                        case (EventTypeEnum.WalletBalancesChanged, List<AccountWalletDto> wallets):
-                            var accIds = wallets.Select(x => x.AccountId).Distinct();
-                            var accountGuids = await dbContext.Accounts.Where(x => accIds.Contains(x.Id))
-                                .ToDictionaryAsync(x => x.Id, x => x.AccountId, stoppingToken);
-                            var tasks = wallets.Distinct().Select(x =>
-                                signalRService.SendWalletUpdate(signalRHub.Clients, accountGuids[x.AccountId], x));
-                            await Task.WhenAll(tasks);
-
-                            json = JsonSerializer.Serialize(wallets);
-                            await dbContext.Events.AddAsync(new AppEvent(newEvent, json), stoppingToken);
-                            await dbContext.SaveChangesAsync(stoppingToken);
-                            break;
                     }
                 }
                 catch (Exception ex)
