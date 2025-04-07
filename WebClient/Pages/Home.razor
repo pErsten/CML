@@ -6,21 +6,14 @@
 @inject IJSRuntime _jsRuntime;
 
 <PageTitle>Chart</PageTitle>
-<MudCard>
-    <MudCardContent Class="d-flex gap-4">
-        <div class="flex-initial">
-            <MudText Typo="Typo.h4">
-                BTC/EUR:
-                <MudText Inline="true" Typo="Typo.h4" Color="@(isUpTrend.HasValue ? (isUpTrend.Value ? MudBlazor.Color.Success : MudBlazor.Color.Error) : MudBlazor.Color.Default)"><b>@btcRate</b></MudText>
-            </MudText>
-        </div>
-    </MudCardContent>
-</MudCard>
 
-<h3>Welcome to the Bitcoin chart!</h3>
+
 
 @if (!isLoading)
 {
+    <BitcoinRateCard HubConnection="hubConnection" />
+    <h3>Welcome to the Bitcoin chart!</h3>
+    
     <DepthChart HubConnection="hubConnection">
 
     </DepthChart>
@@ -48,8 +41,6 @@
 @code {
     private HubConnection hubConnection;
 
-    private decimal btcRate;
-    private bool? isUpTrend;
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -69,18 +60,7 @@
             .WithAutomaticReconnect()
             .Build();
 
-        hubConnection.On<decimal>("BtcRateUpdate", (rate) =>
-        {
-            if (btcRate != 0)
-            {
-                isUpTrend = rate >= btcRate;
-            }
-            btcRate = rate;
-            StateHasChanged();
-        });
-
         await hubConnection.StartAsync();
-        await hubConnection.InvokeAsync("ClientGetBitcoinRate");
 
         isLoading = false;
         StateHasChanged();

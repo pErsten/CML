@@ -1,0 +1,34 @@
+﻿@using Microsoft.AspNetCore.SignalR.Client
+
+<MudCard>
+    <MudCardContent Class="d-flex gap-4">
+        <div class="flex-initial">
+            <MudText Typo="Typo.h4">
+                BTC/EUR:
+                <MudText Inline="true" Typo="Typo.h4" Color="@(isUpTrend.HasValue ? (isUpTrend.Value ? MudBlazor.Color.Success : MudBlazor.Color.Error) : MudBlazor.Color.Default)"><b>@btcRate</b></MudText>
+            </MudText>
+        </div>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public HubConnection HubConnection { get; set; }
+    private decimal btcRate;
+    private bool? isUpTrend;
+
+    protected override async Task OnInitializedAsync()
+    {
+        HubConnection.On<decimal>("BtcRateUpdate", (rate) =>
+        {
+            if (btcRate != 0)
+            {
+                isUpTrend = rate >= btcRate;
+            }
+            btcRate = rate;
+            StateHasChanged();
+        });
+
+        await HubConnection.InvokeAsync("ClientGetBitcoinRate");
+    }
+}
