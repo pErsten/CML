@@ -1,8 +1,5 @@
 ﻿@page "/"
-@using Common
 @using Microsoft.AspNetCore.SignalR.Client
-@using Microsoft.IdentityModel.Tokens
-@using Common.Data.Models
 @using WebClient.Components
 @inject IConfiguration configuration
 @inject NavigationManager Navigation
@@ -11,61 +8,41 @@
 <PageTitle>Chart</PageTitle>
 <MudCard>
     <MudCardContent Class="d-flex gap-4">
-        <div class = "flex-initial">
-            <MudText Typo="Typo.h4">BTC/EUR:
+        <div class="flex-initial">
+            <MudText Typo="Typo.h4">
+                BTC/EUR:
                 <MudText Inline="true" Typo="Typo.h4" Color="@(isUpTrend.HasValue ? (isUpTrend.Value ? MudBlazor.Color.Success : MudBlazor.Color.Error) : MudBlazor.Color.Default)"><b>@btcRate</b></MudText>
             </MudText>
         </div>
     </MudCardContent>
 </MudCard>
 
-@if (!username.IsNullOrEmpty())
-{
-    <MudText Class="mt-2" Typo="Typo.h5" Align="MudBlazor.Align.Center">Welcome back, @username!</MudText>
-    <div class="d-flex gap-4">
-        <MudCard>
-            <MudCardContent Class="d-flex gap-4">
-                <div class="flex-initial">
-                    <MudText Typo="Typo.h5">
-                        BTC wallet:
-                        <MudText Inline="true" Typo="Typo.h5">@cryptoBalance</MudText>
-                    </MudText>
-                </div>
-            </MudCardContent>
-        </MudCard>
-        <MudCard>
-            <MudCardContent Class="d-flex gap-4">
-                <div class="flex-initial">
-                    <MudText Typo="Typo.h5">
-                        EUR wallet:
-                        <MudText Inline="true" Typo="Typo.h5">@fiatBalance</MudText>
-                    </MudText>
-                </div>
-            </MudCardContent>
-        </MudCard>
-    </div>
-}
-else
-{
-    <h3>Welcome to the Bitcoin chart!</h3>
-    <div>to see your balances you have to log in</div>
-}
+<h3>Welcome to the Bitcoin chart!</h3>
 
 @if (!isLoading)
 {
-    <BitcoinCandlestickGraph HubConnection="hubConnection">
-
-    </BitcoinCandlestickGraph>
     <DepthChart HubConnection="hubConnection">
 
     </DepthChart>
 
-    @if (!username.IsNullOrEmpty())
-    {
-        <div class="mt-2">
-            <OrderCreationForm HubConnection="hubConnection"></OrderCreationForm>
-        </div>
-    }
+    <div class="mt-2 d-flex gap-4">
+        <MudGrid>
+            <MudItem xs="4">
+                <ExchangeCalculatorTable HubConnection="hubConnection">
+
+                </ExchangeCalculatorTable>
+            </MudItem>
+            <MudItem xs="8">
+                <MudCard>
+                    <MudCardContent>
+                        <BitcoinCandlestickGraph HubConnection="hubConnection">
+
+                        </BitcoinCandlestickGraph>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    </div>
 }
 
 
@@ -73,19 +50,17 @@ else
 
 @code {
     private HubConnection hubConnection;
+
     private decimal fiatBalance;
     private decimal cryptoBalance;
     private decimal btcRate;
-    private string username;
     private bool? isUpTrend;
     private bool isLoading = true;
-
 
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
-        string serverUrl = configuration.GetValue<string>("ServerUrl"); 
-        username = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "username");
+        string serverUrl = configuration.GetValue<string>("ServerUrl");
 
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri($"{serverUrl}/messages"), options =>
@@ -99,20 +74,6 @@ else
             .WithAutomaticReconnect()
             .Build();
 
-
-        hubConnection.On<AccountWalletDto>("WalletUpdate", (wallet) =>
-        {
-            if (wallet.Currency == Constants.FiatCurrency)
-            {
-                fiatBalance = wallet.Amount;
-            }
-            else if (wallet.Currency == Constants.CryptoCurrency)
-            {
-                cryptoBalance = wallet.Amount;
-            }
-            StateHasChanged();
-        });
-
         hubConnection.On<decimal>("BtcRateUpdate", (rate) =>
         {
             if (btcRate != 0)
@@ -125,11 +86,6 @@ else
 
         await hubConnection.StartAsync();
         await hubConnection.InvokeAsync("ClientGetBitcoinRate");
-        if (!string.IsNullOrEmpty(username))
-        {
-            await hubConnection.InvokeAsync("SubscribeToWalletUpdates");
-            await hubConnection.InvokeAsync("ClientGetUserBalance");
-        }
 
         isLoading = false;
         StateHasChanged();

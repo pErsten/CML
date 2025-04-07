@@ -1,0 +1,121 @@
+﻿@using System.Globalization
+@using Common.Data.Models
+@using Microsoft.AspNetCore.SignalR.Client
+<h3>ExchangeCalculatorBody</h3>
+
+<MudCard>
+    <MudCardContent>
+        <MudTextField Disabled="IsMarketPrice"
+                      Label="Price EUR"
+                      @bind-Value="Price"
+                      For="@(() => Price)"
+                      Format="F2"
+                      Culture="@CultureInfo.InvariantCulture" />
+        <MudTextField Label="Amount BTC"
+                      @bind-Value="Amount"
+                      For="@(() => Amount)"
+                      Format="F5"
+                      Culture="@CultureInfo.InvariantCulture" />
+        <div class="d-flex">
+            <MudRadioGroup T="bool"
+                           Required="true"
+                           @bind-Value="IsSellingCrypto">
+                <MudRadio Value="true">Sell BTC</MudRadio>
+                <MudRadio Value="false">Buy BTC</MudRadio>
+            </MudRadioGroup>
+        </div>
+        <MudDivider></MudDivider>
+        <MudText>Calculated cost in EUR: @Cost</MudText>
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton OnClick="CalculatePrice"
+                   ButtonType="ButtonType.Button"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Class="ml-auto">
+            Calculate Price
+        </MudButton>
+    </MudCardActions>
+</MudCard>
+
+@code {
+    [Parameter]
+    public bool IsMarketPrice { get; set; }
+    [Parameter]
+    public HubConnection HubConnection { get; set; }
+
+    private static List<BitcoinOrdersDto> OpenBids;
+    private static List<BitcoinOrdersDto> OpenAsks;
+    private decimal Amount = 0m;
+    private decimal Price = 0m;
+    private bool IsSellingCrypto = false;
+    private decimal Cost = 0m;
+
+    protected override async Task OnInitializedAsync()
+    {
+        HubConnection.On<OrderBookSnapshotDto>("OrdersUpdate", snapshot =>
+        {
+            if (snapshot.IsRealTime)
+            {
+                OpenAsks = snapshot.OpenAsksAgg;
+                OpenBids = snapshot.OpenBidsAgg;
+            }
+            StateHasChanged();
+        });
+    }
+
+    private void CalculatePrice()
+    {
+        if (OpenAsks is null || OpenBids is null)
+            return;
+        if (Price < 0m || Amount < 0m)
+        {
+            // TODO: show err msg
+            return;
+        }
+
+        Cost = 0m;
+        if (IsMarketPrice)
+        {
+            if (IsSellingCrypto)
+            {
+                CalculateMarketPrice(OpenBids);
+            }
+            else
+            {
+                CalculateMarketPrice(OpenAsks);
+            }
+        }
+        else
+        {
+            Cost = Amount * Price;
+        }
+        StateHasChanged();
+    }
+
+    private void CalculateMarketPrice(List<BitcoinOrdersDto> list)
+    {
+        var amount = Amount;
+        int i = 0;
+        while (amount > 0m)
+        {
+            if (i >= list.Count)
+            {
+                // TODO: show err msg
+                return;
+            }
+            var currentBid = list[i];
+            if (amount > currentBid.Amount)
+            {
+                Cost += currentBid.Amount * currentBid.Price;
+                i++;
+                amount -= currentBid.Amount;
+            }
+            else
+            {
+                Cost += amount * currentBid.Price;
+                amount = 0m;
+            }
+        }
+    }
+}
