@@ -7,10 +7,9 @@ This project is a simple mockup of a cryptocurrency trading platform. It support
 ## ✨ Features
 
 - 🔐 JWT Authentication for users
-- 📦 Create and manage Bitcoin bid/ask orders
-- 💼 Account wallet system (crypto & fiat)
+- 📦 Calculate prices for EUR and BTC exchanges
 - 📈 Real-time Bitcoin rate broadcasting
-- 🧠 Background services for order matching and rate fetching
+- 🧠 Background services for order book and rate fetching
 - 🔁 SignalR hub for live data to the Blazor client
 
 ---
@@ -76,12 +75,12 @@ Open the Blazor client to test the UI and SignalR-based real-time updates.
 
 ### Screenshots:
 
-- Unanouthorized main screen:
-![image](https://github.com/user-attachments/assets/ce68be92-08c9-4db1-a3ea-d88bf75decc4)
-- Authorized main screen:
-![image](https://github.com/user-attachments/assets/230abd48-b130-450e-9eed-85d5664b63a7)
+- Main screen:
+![image](https://github.com/user-attachments/assets/e638c07c-2bc8-48a5-b041-85c7e252230f)
+- Exchange calculator:
+![image](https://github.com/user-attachments/assets/f032f0e8-3de1-487e-a6db-e556e8f33c67)
 - Selecting order book snapshot from list:
-![image](https://github.com/user-attachments/assets/393d74ef-f9a2-422c-992b-f878c6cf15db)
+![image](https://github.com/user-attachments/assets/f9cdaa7c-81b7-4f1b-b205-b85d45a15d0d)
 - Login form:
 ![image](https://github.com/user-attachments/assets/bf095a6c-e467-4f97-9cbd-2f9e01b180c9)
 - Swagger:
