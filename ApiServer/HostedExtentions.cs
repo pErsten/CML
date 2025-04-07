@@ -23,15 +23,7 @@ namespace ApiServer
 
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
-
-            var ordersManagerChannel = Channel.CreateUnbounded<BitcoinOrder>(new UnboundedChannelOptions
-            {
-                SingleReader = true
-            });
-            services.AddSingleton(ordersManagerChannel);
-            services.AddSingleton(ordersManagerChannel.Writer);
-            services.AddSingleton(ordersManagerChannel.Reader);
-
+            
             var eventsChannel = Channel.CreateUnbounded<EventDto>(new UnboundedChannelOptions
             {
                 SingleReader = true
@@ -52,7 +44,7 @@ namespace ApiServer
             services.AddHttpContextAccessor();
 
             services.AddHostedService<BtcRatesFetcher>();
-            services.AddHostedService<OrdersManager>();
+            services.AddHostedService<OrderBookFetcher>();
             services.AddHostedService<EventProceeder>();
 
             var jwtKey = builder.Configuration.GetValue<string>("Auth:JwtKey");

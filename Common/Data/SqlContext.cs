@@ -12,8 +12,6 @@ namespace Common.Data
         public DbSet<BitcoinExchange> BitcoinExchanges { get; set; }
         public DbSet<Account> Accounts { get; set; }
         public DbSet<AccountWallet> AccountWallets { get; set; }
-        public DbSet<BitcoinOrder> BitcoinOrders { get; set; }
-        public DbSet<BitcoinOrderTransaction> BitcoinOrderTransactions { get; set; }
         public DbSet<AppEvent> Events { get; set; }
         public DbSet<OrderBookSnapshot> OrderBookSnapshots { get; set; }
 

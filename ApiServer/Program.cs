@@ -36,7 +36,5 @@ var anonEPs = app.MapGroup("/").AllowAnonymous().WithOpenApi();
 // Controllers
 anonEPs.UserAuthController();
 
-authEPs.UserOrdersController(app.Environment);
-
 app.Run();
 

@@ -42,9 +42,9 @@ namespace ApiServer.Services
                 var bidsAgg = JsonSerializer.Deserialize<List<BitcoinOrdersDto>>(snapshot.BidsJson)!;
                 var asksAgg = JsonSerializer.Deserialize<List<BitcoinOrdersDto>>(snapshot.AsksJson)!;
                 if (bidsAgg.Count > Constants.OrdersShown)
-                    bidsAgg = bidsAgg[^Constants.OrdersShown..];
+                    bidsAgg = bidsAgg[..Constants.OrdersShown];
                 if (asksAgg.Count > Constants.OrdersShown)
-                    asksAgg = asksAgg[^Constants.OrdersShown..];
+                    asksAgg = asksAgg[..Constants.OrdersShown];
 
                 return new OrderBookSnapshotDto
                 {
