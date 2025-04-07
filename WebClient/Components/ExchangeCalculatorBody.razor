@@ -25,7 +25,8 @@
             </MudRadioGroup>
         </div>
         <MudDivider></MudDivider>
-        <MudText>Calculated cost in EUR: @Cost</MudText>
+        <MudText>Calculated total cost in EUR: <MudText Inline="true" Align="Align.Right">@(Cost.ToString("F5"))</MudText></MudText>
+        <MudText>Calculated average BTC price in EUR: <MudText Inline="true" Align="Align.Right">@((Cost / (Amount > 0 ? Amount : 1)).ToString("F5"))</MudText></MudText>
     </MudCardContent>
     <MudCardActions>
         <MudButton OnClick="CalculatePrice"

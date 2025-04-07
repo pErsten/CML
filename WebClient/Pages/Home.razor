@@ -27,12 +27,12 @@
 
     <div class="mt-2 d-flex gap-4">
         <MudGrid>
-            <MudItem xs="4">
+            <MudItem xs="5">
                 <ExchangeCalculatorTable HubConnection="hubConnection">
 
                 </ExchangeCalculatorTable>
             </MudItem>
-            <MudItem xs="8">
+            <MudItem xs="7">
                 <MudCard>
                     <MudCardContent>
                         <BitcoinCandlestickGraph HubConnection="hubConnection">
@@ -45,14 +45,9 @@
     </div>
 }
 
-
-
-
 @code {
     private HubConnection hubConnection;
 
-    private decimal fiatBalance;
-    private decimal cryptoBalance;
     private decimal btcRate;
     private bool? isUpTrend;
     private bool isLoading = true;
