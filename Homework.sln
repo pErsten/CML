@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebClient", "WebClient\WebClient.csproj", "{AD583DC3-2468-40F5-A0F0-BC7344367F7A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiServer.Tests", "ApiServer.Tests\ApiServer.Tests.csproj", "{8D270AEB-AD79-432F-8131-027245BB73F4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{AD583DC3-2468-40F5-A0F0-BC7344367F7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD583DC3-2468-40F5-A0F0-BC7344367F7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD583DC3-2468-40F5-A0F0-BC7344367F7A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D270AEB-AD79-432F-8131-027245BB73F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D270AEB-AD79-432F-8131-027245BB73F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D270AEB-AD79-432F-8131-027245BB73F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D270AEB-AD79-432F-8131-027245BB73F4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
