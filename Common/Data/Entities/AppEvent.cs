@@ -4,6 +4,9 @@ using Common.Data.Models;
 
 namespace Common.Data.Entities
 {
+    /// <summary>
+    /// Represents an application-level event with a timestamp, type, and serialized event-specific data.
+    /// </summary>
     public class AppEvent
     {
         [Key]

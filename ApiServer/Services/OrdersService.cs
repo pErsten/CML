@@ -6,17 +6,29 @@ using Common.Data.Models;
 
 namespace ApiServer.Services
 {
+    /// <summary>
+    /// Service responsible for retrieving order book snapshot data from the database.
+    /// </summary>
     public class OrdersService
     {
         private readonly ILogger<OrdersService> logger;
         private readonly SqlContext dbContext;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="OrdersService"/> class with logging and database access.
+        /// </summary>
         public OrdersService(ILoggerFactory loggerFactory, SqlContext dbContext)
         {
             logger = loggerFactory.CreateLogger<OrdersService>();
             this.dbContext = dbContext;
         }
 
+        /// <summary>
+        /// Retrieves a single order book snapshot, either the latest (real-time) or a historical one by ID.
+        /// </summary>
+        /// <param name="isRealTime">Indicates whether to fetch the most recent snapshot.</param>
+        /// <param name="id">The ID of the snapshot to fetch if <paramref name="isRealTime"/> is false.</param>
+        /// <returns>An <see cref="OrderBookSnapshotDto"/> representing the snapshot, or null if not found.</returns>
         public async Task<OrderBookSnapshotDto?> GetOrderBookSnapshot(bool isRealTime, int id)
         {
             try
@@ -50,6 +62,10 @@ namespace ApiServer.Services
             }
         }
 
+        /// <summary>
+        /// Retrieves a list of snapshot metadata for display in a selection table.
+        /// </summary>
+        /// <returns>A list of <see cref="OrderBookSnapshotSelectionTableDto"/> objects.</returns>
         public async Task<List<OrderBookSnapshotSelectionTableDto>> GetSnapshotsSelectionTableDtos()
         {
             return await dbContext.OrderBookSnapshots.Select(x => new OrderBookSnapshotSelectionTableDto

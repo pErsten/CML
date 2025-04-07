@@ -120,6 +120,12 @@ public class BlazorSignalRService
         await clients.Client(connectionId).SendAsync("BtcRateUpdate", rate);
     }
 
+    /// <summary>
+    /// Sends Bitcoin chart data to a specific client based on the selected time interval split.
+    /// </summary>
+    /// <param name="clients">The SignalR clients interface.</param>
+    /// <param name="splitType">The time interval to group chart data by (e.g., hourly, 15 minutes).</param>
+    /// <param name="connectionId">The SignalR connection ID of the target client.</param>
     public async Task ClientGetBitcoinChart(IHubCallerClients clients, StockMarketSplitTypeEnum splitType, string connectionId)
     {
         using var scope = scopeFactory.CreateScope();
@@ -131,6 +137,11 @@ public class BlazorSignalRService
         await clients.Client(connectionId).SendAsync("BitcoinChartUpdate", chartData);
     }
 
+    /// <summary>
+    /// Broadcasts updated Bitcoin chart data to all connected clients based on the selected time interval split.
+    /// </summary>
+    /// <param name="clients">The SignalR clients interface.</param>
+    /// <param name="splitType">The time interval to group chart data by (e.g., hourly, 15 minutes).</param>
     public async Task SendBitcoinChartUpdate(IHubClients clients, StockMarketSplitTypeEnum splitType)
     {
         using var scope = scopeFactory.CreateScope();
@@ -142,6 +153,11 @@ public class BlazorSignalRService
         await clients.All.SendAsync("BitcoinChartUpdate", chartData);
     }
 
+    /// <summary>
+    /// Sends a snapshot list of the current order book state to a specific client.
+    /// </summary>
+    /// <param name="clients">The SignalR clients interface.</param>
+    /// <param name="connectionId">The SignalR connection ID of the target client.</param>
     public async Task ClientGetOrderBookSnapshots(IHubCallerClients clients, string connectionId)
     {
         using var scope = scopeFactory.CreateScope();

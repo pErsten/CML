@@ -11,6 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApiServer.BackgroundWorkers
 {
+    /// <summary>
+    /// Background service that processes events from a channel and handles them accordingly.
+    /// </summary>
     public class EventProceeder : BackgroundService
     {
         private readonly ILogger<EventProceeder> logger;
@@ -18,6 +21,9 @@ namespace ApiServer.BackgroundWorkers
         private readonly ChannelReader<EventDto> eventsChannel;
         private readonly BlazorSignalRService signalRService;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EventProceeder"/> class.
+        /// </summary>
         public EventProceeder(ILoggerFactory loggerFactory, IServiceScopeFactory scopeFactory, ChannelReader<EventDto> eventsChannel, BlazorSignalRService signalRService)
         {
             logger = loggerFactory.CreateLogger<EventProceeder>();
@@ -25,6 +31,11 @@ namespace ApiServer.BackgroundWorkers
             this.eventsChannel = eventsChannel;
             this.signalRService = signalRService;
         }
+
+        /// <summary>
+        /// Executes the background service to process events from the channel.
+        /// </summary>
+        /// <param name="stoppingToken">The token to monitor for cancellation requests.</param>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await foreach (var newEvent in eventsChannel.ReadAllAsync(stoppingToken))
@@ -39,8 +50,7 @@ namespace ApiServer.BackgroundWorkers
                     {
                         case (EventTypeEnum.BitcoinRateChanged, BitcoinExchange exchange):
                             await signalRService.SendBitcoinRateUpdate(signalRHub.Clients, exchange.BTCRate);
-                            await signalRService.SendBitcoinChartUpdate(signalRHub.Clients,
-                                StockMarketSplitTypeEnum.FifteenMins);
+                            await signalRService.SendBitcoinChartUpdate(signalRHub.Clients, StockMarketSplitTypeEnum.FifteenMins);
 
                             json = JsonSerializer.Serialize(exchange);
                             await dbContext.Events.AddAsync(new AppEvent(newEvent, json), stoppingToken);

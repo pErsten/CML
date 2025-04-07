@@ -2,6 +2,9 @@
 
 namespace Common.Data.Entities
 {
+    /// <summary>
+    /// Represents a registered user account with login credentials and creation metadata.
+    /// </summary>
     public class Account
     {
         [Key]

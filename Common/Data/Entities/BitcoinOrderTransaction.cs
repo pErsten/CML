@@ -3,6 +3,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Common.Data.Entities
 {
+    /// <summary>
+    /// Represents a transaction that occurs between two Bitcoin orders (bid and ask), including the amount, price, and creation time.
+    /// </summary>
     public class BitcoinOrderTransaction
     {
         [Key]

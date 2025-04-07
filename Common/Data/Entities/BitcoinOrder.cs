@@ -3,6 +3,9 @@ using Common.Data.Enums;
 
 namespace Common.Data.Entities
 {
+    /// <summary>
+    /// Represents a Bitcoin trade order placed by a user, including type, status, amount, price, and timestamps.
+    /// </summary>
     public class BitcoinOrder
     {
         public int Id { get; set; }

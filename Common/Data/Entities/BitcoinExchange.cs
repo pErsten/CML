@@ -2,6 +2,9 @@
 
 namespace Common.Data.Entities
 {
+    /// <summary>
+    /// Represents a historical Bitcoin exchange rate record, including the rate, currency, and timestamp.
+    /// </summary>
     public class BitcoinExchange
     {
         [Key]

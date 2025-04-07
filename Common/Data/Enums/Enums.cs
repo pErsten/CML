@@ -1,5 +1,8 @@
 ﻿namespace Common.Data.Enums;
 
+/// <summary>
+/// Represents the type of an order in the order book (either a bid or ask).
+/// </summary>
 public enum OrderTypeEnum
 {
     Unknown = 0,
@@ -7,6 +10,9 @@ public enum OrderTypeEnum
     Ask = 2
 }
 
+/// <summary>
+/// Represents the status of an order, such as whether it is open, filled, or cancelled.
+/// </summary>
 public enum OrderStatusEnum
 {
     Unknown = 0,
@@ -16,6 +22,9 @@ public enum OrderStatusEnum
     PartiallyCancelled = 4
 }
 
+/// <summary>
+/// Represents different types of events in the system, such as updates to the order book, wallet balances, or Bitcoin rates.
+/// </summary>
 public enum EventTypeEnum
 {
     OrderBookUpdated = 1,
@@ -23,6 +32,9 @@ public enum EventTypeEnum
     BitcoinRateChanged = 3
 }
 
+/// <summary>
+/// Represents different split types for stock market data, such as 15-minute intervals.
+/// </summary>
 public enum StockMarketSplitTypeEnum
 {
     Unknown = 0,

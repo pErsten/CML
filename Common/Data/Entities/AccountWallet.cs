@@ -3,6 +3,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Common.Data.Entities
 {
+    /// <summary>
+    /// Represents a wallet tied to a specific user account, containing a currency type and its associated balance.
+    /// </summary>
     public class AccountWallet
     {
         [Key]
