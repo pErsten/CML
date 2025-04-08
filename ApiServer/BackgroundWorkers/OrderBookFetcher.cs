@@ -10,6 +10,11 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace ApiServer.BackgroundWorkers
 {
+    /// <summary>
+    /// A background service that periodically fetches real-time order book data from the Bitstamp API,
+    /// processes and aggregates it into cumulative bid/ask snapshots, stores the data in the database,
+    /// and emits an event for downstream consumers to react to updates.
+    /// </summary>
     public class OrderBookFetcher : BackgroundService
     {
         private readonly ILogger<OrderBookFetcher> logger;
@@ -27,6 +32,11 @@ namespace ApiServer.BackgroundWorkers
             url = configuration.GetValue<string>("BitstampOrderBookSnapshotUrl");
         }
 
+        /// <summary>
+        /// Periodically executes the order book fetching and processing logic
+        /// until the service is stopped or a cancellation is requested.
+        /// </summary>
+        /// <param name="stoppingToken">Token to monitor for cancellation requests.</param>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             try
@@ -45,6 +55,11 @@ namespace ApiServer.BackgroundWorkers
             }
         }
 
+        /// <summary>
+        /// Performs a single execution cycle of fetching the order book data from the Bitstamp API,
+        /// processing and aggregating it into snapshot format, saving it to the database, and emitting an update event.
+        /// </summary>
+        /// <param name="stoppingToken">Token to monitor for cancellation requests during processing.</param>
         private async Task RunAsync(CancellationToken stoppingToken)
         {
             var scope = scopeFactory.CreateScope();

@@ -10,13 +10,16 @@ using Common;
 
 namespace ApiServer.Tests
 {
+    /// <summary>
+    /// Provides a shared test context for unit tests, initializing an in-memory database
+    /// with seeded data for testing components that depend on <see cref="SqlContext"/>.
+    /// </summary>
     public class TestFixture : IDisposable
     {
         public SqlContext DbContext { get; private set; }
 
         public TestFixture()
         {
-            // TODO: figure out where to store string
             var options = new DbContextOptionsBuilder<SqlContext>()
                 .UseInMemoryDatabase(databaseName: "TestDb") 
                 .Options;
